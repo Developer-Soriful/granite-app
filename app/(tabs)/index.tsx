@@ -39,6 +39,7 @@ export default function Dashboard({ currentAvg,
         contentContainerStyle={{
           flexGrow: 1,
           padding: 16,
+          display: "flex",
           paddingTop: 70,
           gap: 16,
         }}

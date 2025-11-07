@@ -6,12 +6,12 @@ import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 const BudgetCalendar = () => {
     const [activeView, setActiveView] = useState('spending');
     const [selectedMonth, setSelectedMonth] = useState('September, 2025');
+    const [selectedDate, setSelectedDate] = useState<number | null>(null); // Selected date state
 
     // API-ready state structure
     const [budgetData, setBudgetData] = useState({
-        dailyBudget: 50, // You can update this from API
+        dailyBudget: 50,
         monthlyData: [
-            // Each entry: { date: number, amount: number }
             { date: 1, amount: 50 },
             { date: 2, amount: 24 },
             { date: 3, amount: 0 },
@@ -53,44 +53,31 @@ const BudgetCalendar = () => {
         return 'text-gray-900 font-medium';
     };
 
-    const getCellBg = (amount: number) => {
-        if (amount === 0) return 'bg-white';
-        if (amount > budgetData.dailyBudget) return 'bg-red-50';
-        return 'bg-white';
+    const getCellBg = (amount: number, isSelected: boolean) => {
+        if (isSelected) return 'bg-[#e7f4ee] border-[#4c8167]'; // Selected state
+        if (amount === 0) return 'bg-white border-[#dfe4e3]';
+        if (amount > budgetData.dailyBudget) return 'bg-red-50 border-[#dfe4e3]';
+        return 'bg-white border-[#dfe4e3]';
     };
 
-    // Function to integrate API data
-    const loadBudgetData = async (month: string, year: string) => {
-        try {
-            // Example API call structure
-            // const response = await fetch(`/api/budget?month=${month}&year=${year}`);
-            // const data = await response.json();
-            // setBudgetData(data);
-
-            console.log('Load data for:', month, year);
-        } catch (error) {
-            console.error('Error loading budget data:', error);
-        }
+    // Handle date click
+    const handleDateClick = (date: number) => {
+        setSelectedDate(date);
+        console.log('Selected date:', date);
     };
 
     return (
-        <ScrollView
-            showsVerticalScrollIndicator={false}
-        >
-            <View style={{
-                backgroundColor: "#fefffe",
-                borderRadius: 16,
-            }} className="p-4">
+        <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={{ backgroundColor: "#fefffe", borderRadius: 16 }} className="p-4">
                 <View className='flex flex-col gap-2'>
                     {/* Header */}
                     <Text className="text-xl font-semibold">September 2025</Text>
+
                     {/* Toggle Buttons */}
                     <View className="flex-row gap-2 border border-[#dfe4e3] p-1 rounded-lg">
                         <TouchableOpacity
                             onPress={() => setActiveView('spending')}
-                            className={`flex-1 py-3 px-4 rounded-lg ${activeView === 'spending'
-                                ? 'bg-[#e7f4ee]'
-                                : 'bg-white'
+                            className={`flex-1 py-3 px-4 rounded-lg ${activeView === 'spending' ? 'bg-[#e7f4ee]' : 'bg-white'
                                 }`}
                         >
                             <Text className={`text-sm font-semibold text-center ${activeView === 'spending' ? 'text-[#4c8167]' : 'text-[#68716c]'
@@ -100,9 +87,7 @@ const BudgetCalendar = () => {
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => setActiveView('budget')}
-                            className={`flex-1 py-3 px-4 rounded-lg ${activeView === 'budget'
-                                ? 'bg-[#e7f4ee]'
-                                : 'bg-white'
+                            className={`flex-1 py-3 px-4 rounded-lg ${activeView === 'budget' ? 'bg-[#e7f4ee]' : 'bg-white'
                                 }`}
                         >
                             <Text className={`text-sm font-semibold text-center ${activeView === 'budget' ? 'text-[#4c8167]' : 'text-[#68716c]'
@@ -111,6 +96,7 @@ const BudgetCalendar = () => {
                             </Text>
                         </TouchableOpacity>
                     </View>
+
                     {/* Month Selector */}
                     <View className="flex-row items-center justify-between border border-[#dfe4e3] p-1 rounded-lg px-4 py-3 mb-6">
                         <Text className="text-gray-900 font-medium">{selectedMonth}</Text>
@@ -130,21 +116,27 @@ const BudgetCalendar = () => {
                             ))}
                         </View>
 
-                        {/* Calendar Grid */}
+                        {/* Calendar Grid - Now Clickable */}
                         <View className="flex-row flex-wrap">
-                            {budgetData.monthlyData.map((day) => (
-                                <View
-                                    key={day.date}
-                                    className={`w-[14.28%] aspect-square p-1`}
-                                >
-                                    <View className={`flex-1 items-start justify-center border border-[#dfe4e3] p-1 rounded-[6px]`}>
-                                        <Text className="text-[10px] text-gray-600 mb-0.5">{day.date}</Text>
-                                        <Text className={`text-[10px] ${getCellStyle(day.amount)}`}>
-                                            {day.amount === 0 ? '-' : `$${day.amount}`}
-                                        </Text>
+                            {budgetData.monthlyData.map((day) => {
+                                const isSelected = selectedDate === day.date;
+                                return (
+                                    <View key={day.date} className={`w-[14.28%] aspect-square p-1`}>
+                                        <TouchableOpacity
+                                            onPress={() => handleDateClick(day.date)}
+                                            className={`flex-1 items-start justify-center border-[1px] p-1 rounded-[6px] ${getCellBg(day.amount, isSelected)}`}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text className={`text-[10px] mb-0.5 ${isSelected ? 'text-[#4c8167] font-semibold' : 'text-gray-600'}`}>
+                                                {day.date}
+                                            </Text>
+                                            <Text className={`text-[10px] ${isSelected ? 'text-[#4c8167] font-bold' : getCellStyle(day.amount)}`}>
+                                                {day.amount === 0 ? '-' : `$${day.amount}`}
+                                            </Text>
+                                        </TouchableOpacity>
                                     </View>
-                                </View>
-                            ))}
+                                );
+                            })}
                         </View>
                     </View>
 
@@ -167,14 +159,13 @@ const BudgetCalendar = () => {
                     </View>
                 </View>
             </View>
-            {/* this is for transition for every months */}
-            <View style={{
-                backgroundColor: "#fefffe",
-                borderRadius: 16,
-                marginTop: 16
-            }}>
+
+            {/* Transactions Section */}
+            <View style={{ backgroundColor: "#fefffe", borderRadius: 16, marginTop: 16 }}>
                 <View className='p-4'>
-                    <Text className="text-[16px] font-semibold">Transactions for September 25, 2025</Text>
+                    <Text className="text-[16px] font-semibold">
+                        Transactions for September {selectedDate || 25}, 2025
+                    </Text>
                     <View className='flex-row items-center justify-between gap-3 py-4 border-b border-[#dfe4e3]'>
                         <View className='bg-[#fceff0] p-3 rounded-lg'>
                             <Image source={Images.transaction2} />
