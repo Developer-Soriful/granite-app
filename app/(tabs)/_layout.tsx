@@ -1,35 +1,80 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { Tabs } from "expo-router";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+const ACTIVE_COLOR = '#4c8166';
+const INACTIVE_COLOR = '#909a94';
+const ACTIVE_BG_COLOR = '#e6f5ee';
+const BORDER_COLOR = "#dfe4e3";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+    return (
+        <Tabs
+            screenOptions={{
+                headerShown: false,
+                tabBarActiveTintColor: ACTIVE_COLOR,
+                tabBarInactiveTintColor: INACTIVE_COLOR,
+                tabBarActiveBackgroundColor: 'transparent',
+                tabBarInactiveBackgroundColor: 'transparent',
+                tabBarStyle: {
+                    borderTopWidth: 2,
+                    elevation: 0,
+                    backgroundColor: 'white',
+                    borderColor: BORDER_COLOR,
+                    borderLeftWidth: 1,
+                    borderRightWidth: 1,
+                    borderBottomWidth: 0,
+                    borderTopLeftRadius: 20,
+                    borderTopRightRadius: 20,
+                    overflow: "hidden",
+                },
 
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
-  );
+                tabBarLabelStyle: {
+                    fontSize: 12,
+                    fontWeight: '600',
+                }
+            }}
+        >
+
+            <Tabs.Screen
+                name="index"
+                options={{
+                    title: "Dashboard",
+                    tabBarIcon: ({ color }) => (
+                        <MaterialCommunityIcons
+                            name="view-dashboard-outline"
+                            size={24}
+                            color={color}
+                        />
+                    ),
+                }}
+            />
+
+            <Tabs.Screen
+                name="calendar"
+                options={{
+                    title: "Calendar",
+                    tabBarIcon: ({ color }) => (
+                        <Ionicons name="calendar-clear-outline" size={24} color={color} />
+                    ),
+                }}
+            />
+
+            <Tabs.Screen
+                name="insights"
+                options={{
+                    title: "Insights",
+                    tabBarIcon: ({ color }) => (
+                        <MaterialCommunityIcons name="finance" size={24} color={color} />
+                    ),
+                }}
+            />
+            <Tabs.Screen name="settings" options={{
+                title: "Settings",
+                tabBarIcon: ({ color }) => (
+                    <Ionicons name="settings-outline" size={24} color={color} />
+                ),
+            }} />
+        </Tabs>
+    );
 }
