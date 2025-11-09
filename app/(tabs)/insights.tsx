@@ -18,7 +18,7 @@ const Insights = () => {
                     flexGrow: 1,
                     padding: 16,
                     display: "flex",
-                    paddingTop: 70,
+                    paddingTop: 65,
                     gap: 16,
                 }}
                 showsVerticalScrollIndicator={false}

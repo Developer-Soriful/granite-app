@@ -66,7 +66,7 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
                                 color: isFocused ? "#4c8167" : "#68716c"
                             })}
                         </Text>
-                        <Text style={{ fontWeight: 600, color: isFocused ? "#4c8167" : "#68716c" }}>
+                        <Text style={{ fontWeight: 700, fontSize: 12, paddingTop: 2, color: isFocused ? "#4c8167" : "#68716c" }}>
                             {label}
                         </Text>
                     </PlatformPressable>
