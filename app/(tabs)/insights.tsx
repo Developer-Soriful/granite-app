@@ -1,8 +1,11 @@
+import { Images } from '@/assets'
 import BudgetTrendChart from '@/components/BudgetTrendChart'
+import DailySpendingChart from '@/components/DailySpendingChart'
 import SpendingChart from '@/components/SpendingChart'
+import TopExpensesList from '@/components/TopExpensesList'
 import { Ionicons } from '@expo/vector-icons'
 import React from 'react'
-import { ScrollView, Text, View } from 'react-native'
+import { Image, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const Insights = () => {
@@ -35,6 +38,27 @@ const Insights = () => {
                 {/* this is for Spending by Category */}
                 <View>
                     <SpendingChart />
+                </View>
+                {/* this is for top expensess list */}
+                <View>
+                    <TopExpensesList />
+                </View>
+                {/* this is for DailySpendingChart */}
+                <View>
+                    <DailySpendingChart />
+                </View>
+                {/* this is for Projected End-of-Month Balance */}
+                <View className="bg-white rounded-[16px] p-4 w-full flex flex-col gap-4">
+                    <View className='flex flex-col gap-2'>
+                        <Text className='text-xl font-semibold'>Projected End-of-Month Balance</Text>
+                        <Text className='text-sm text-[#434c49]'>Projection based on average daily spend of $105.80</Text>
+                    </View>
+                    <View className='px-5 py-3 flex flex-row items-center justify-between border border-[#8fc1a8] rounded-[16px]'>
+                        <Text className='text-[32px] font-semibold text-[#4c8167]'>+$1,827.00</Text>
+                        <View className='p-[19px] bg-[#e8f2ef] rounded-[16px]'>
+                            <Image source={Images.wallet} />
+                        </View>
+                    </View>
                 </View>
             </ScrollView>
         </SafeAreaView>

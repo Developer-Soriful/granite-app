@@ -1,7 +1,10 @@
+import barchart from "./barchart.png"
+import bolt from "./bolt.png"
 import chart from "./chart.png"
 import graph from "./graph.png"
 import header_img from "./header_icon.png"
 import list from "./list.png"
+import piechart from "./piechart.png"
 import transaction1 from "./transaction1.png"
 import transaction2 from "./transaction2.png"
 import transaction3 from "./transaction3.png"
@@ -21,5 +24,8 @@ export const Images = {
     transaction2,
     transaction3,
     transaction4,
-    transaction5
+    transaction5,
+    bolt,
+    barchart,
+    piechart
 }

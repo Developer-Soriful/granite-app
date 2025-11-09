@@ -14,7 +14,7 @@ export default function TabLayout() {
                 headerShown: false,
                 tabBarActiveTintColor: ACTIVE_COLOR,
                 tabBarInactiveTintColor: INACTIVE_COLOR,
-                tabBarActiveBackgroundColor: 'transparent',
+                tabBarActiveBackgroundColor: '#e7f4ee',
                 tabBarInactiveBackgroundColor: 'transparent',
                 tabBarStyle: {
                     borderTopWidth: 2,
@@ -28,10 +28,15 @@ export default function TabLayout() {
                     borderTopRightRadius: 20,
                     overflow: "hidden",
                 },
-
                 tabBarLabelStyle: {
                     fontSize: 12,
                     fontWeight: '600',
+                    borderRadius: 8
+                },
+                tabBarItemStyle: {
+                    padding: 8,
+                    height: 70,
+                    borderRadius: 12
                 }
             }}
         >

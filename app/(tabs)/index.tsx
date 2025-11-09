@@ -3,33 +3,12 @@ import RecentTransactionsHistory from "@/components/RecentTransactionsHistory";
 import SpendingInsights from "@/components/SpendingInsights";
 import SpendMoney from "@/components/SpendMoney";
 import TransactionsOverview from "@/components/TransactionsOverview";
-import AntDesign from '@expo/vector-icons/AntDesign';
-import { useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type BudgetComparisonProps = {
-  currentAvg: number;
-  newAvg: number;
-  maxValue?: number;
-};
-export default function Dashboard({ currentAvg,
-  newAvg,
-  maxValue, }: BudgetComparisonProps) {
-  const [showTooltip, setShowTooltip] = useState(false);
 
-  const toggleTooltip = () => {
-    setShowTooltip((prev) => !prev);
-  };
+export default function Dashboard() {
 
-  const scale = maxValue || Math.max(currentAvg, newAvg, 200);
-
-  // Use device width minus padding
-  const screenWidth = Dimensions.get("window").width;
-  const barMaxWidth = screenWidth - 64; // 16px padding left + 16px padding right + some margin
-
-  const currentWidth = (currentAvg / scale) * barMaxWidth;
-  const newWidth = (newAvg / scale) * barMaxWidth;
 
   return (
     <SafeAreaView
@@ -53,68 +32,9 @@ export default function Dashboard({ currentAvg,
           backgroundColor: "#fefffe",
           borderRadius: 16,
         }}>
-          <ForecastFuture />
-
-          <View style={{ paddingHorizontal: 16, paddingBottom: 16, display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* New Average Daily Budget card */}
-            <View style={styles.dailyBudgetContainer}>
-              <View>
-                <Text style={{ fontSize: 16, fontWeight: "600" }}>New Average Daily Budget</Text>
-                <Text style={{ fontSize: 24, fontWeight: "600" }}>$172.00</Text>
-              </View>
-              <View style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "flex-start",
-              }}>
-                <AntDesign name="arrow-up" size={24} color="rgba(92, 153, 124, 1)" />
-                <Text style={{ fontSize: 14, color: "rgba(92, 153, 124, 1)" }}>$80 higher than your current average daily budget</Text>
-              </View>
-            </View>
-            {/* this is for daily budget comparison card */}
-            <View style={styles.card}>
-              <Text className="text-[16px] font-semibold ">Daily Budget Comparison</Text>
-
-              <View style={styles.barsContainer}>
-                <View className="flex flex-col gap-[6px] border-l-[2px] border-b-[2px] pb-[2px] border-[#ccc] pl-[0.5px]">
-                  {/* Current Avg Bar */}
-                  <View style={[styles.bar, { width: currentWidth, backgroundColor: "rgba(54, 120, 179, 1)" }]} />
-
-                  {/* New Avg Bar */}
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={toggleTooltip}
-                    style={[styles.bar, { width: newWidth, backgroundColor: "rgba(92, 153, 124, 1)" }]}
-                  >
-                    {showTooltip && (
-                      <View style={[styles.tooltip, { right: -10 }]}>
-                        <Text style={styles.tooltipText}>New Avg. ${newAvg}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                </View>
-
-                {/* X-axis */}
-                <View style={styles.xAxis}>
-                  {[0, 50, 100, 150, 200].map((val) => (
-                    <Text key={val} style={styles.xAxisLabel}>${val}</Text>
-                  ))}
-                </View>
-              </View>
-
-              {/* Labels */}
-              <View style={styles.labelsContainer}>
-                <View style={styles.label}>
-                  <View style={[styles.dot, { backgroundColor: "#3778b2" }]} />
-                  <Text className="text-sm font-semibold">Current Avg.</Text>
-                </View>
-                <View style={styles.label}>
-                  <View style={[styles.dot, { backgroundColor: "#5d987c" }]} />
-                  <Text className="text-sm font-semibold">New Avg. (Forecast)</Text>
-                </View>
-              </View>
-            </View>
-          </View>
+          <ForecastFuture currentAvg={50.25}
+            numberOfDays={30}
+            maxValue={200} />
         </View>
         {/* this is for Spending Insights */}
         <View>
