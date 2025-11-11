@@ -1,6 +1,11 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "jsx": "react-native",
+    "typeRoots": [
+      "./src/@types",
+      "./node_modules/@types"
+    ],
     "strict": true,
     "paths": {
       "@/*": [
@@ -13,6 +18,8 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "nativewind-env.d.ts"
+    "nativewind-env.d.ts",
+    "react-native.config.js",
+    "components/AppText.js"
   ]
 }

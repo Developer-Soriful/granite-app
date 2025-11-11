@@ -45,7 +45,7 @@ const SpendMoney = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>How Much Can I Spend?</Text>
+            <Text className='' style={styles.title}>How Much Can I Spend?</Text>
 
             <View style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
                 <View style={styles.dayWeekMonthContainer}>
@@ -56,7 +56,7 @@ const SpendMoney = () => {
                         return (
                             <Text
                                 key={filter}
-                                className={`px-4 py-2 font-semibold ${isActive ? 'rounded-[8px] bg-[#e7f4ee] text-[#4c8167]' : 'text-[#68716c]'}`}
+                                className={`font-sans-condensed font-semibold px-4 py-2 ${isActive ? 'rounded-[8px] bg-[#e7f4ee] text-[#4c8167]' : 'text-[#68716c]'}`}
                                 onPress={() => setSelectedFilter(filter as any)}
                             >
                                 {label}

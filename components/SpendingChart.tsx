@@ -2,7 +2,6 @@ import { Images } from "@/assets";
 import React, { useState } from "react";
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { G, Rect, Text as SvgText } from "react-native-svg";
-// 💥 NEW: Import YAxis from react-native-svg-charts 💥
 import { BarChart, Grid, PieChart, YAxis } from "react-native-svg-charts";
 
 const { width } = Dimensions.get("window");
@@ -186,7 +185,7 @@ const SpendingChart = () => {
                             svg={{ fontSize: 14, fill: '#9CA3AF' }}
                             numberOfTicks={CUSTOM_Y_TICKS.length - 1}
                             yMax={Y_MAX_VALUE}
-                            formatLabel={(value) => ''}
+                            formatLabel={(value: any) => ''}
                         >
                             {YAxisLabelRenderer}
                         </YAxis>

@@ -41,7 +41,7 @@ const Header = () => {
                 {/* this is for icon image */}
                 <View style={styles.header_img}>
                     <Image source={Images.header_img} />
-                    <Text style={styles.header_text}>Granite</Text>
+                    <Text className='font-sans-condensed font-bold' style={styles.header_text}>Granite</Text>
                 </View>
 
                 {/* this is for notification profile and arrow icon part */}
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         padding: 12,
         backgroundColor: "#fefffe",
-        borderRadius: 16
+        borderRadius: 16,
     },
     header_img: {
         flexDirection: "row",
@@ -167,6 +167,7 @@ const styles = StyleSheet.create({
     header_text: {
         fontSize: 20,
         fontWeight: "bold",
+        // fontFamily: "InstrumentSans"
     },
     header_icon: {
         display: "flex",

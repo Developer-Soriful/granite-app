@@ -62,7 +62,7 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
                         style={{ flex: 1, borderRadius: 12, height: "100%", backgroundColor: isFocused ? "#e7f4ee" : "transparent" }}
                     >
                         <Text>
-                            {icon[route.name]({
+                            {icon[route.name as keyof typeof icon]({
                                 color: isFocused ? "#4c8167" : "#68716c"
                             })}
                         </Text>

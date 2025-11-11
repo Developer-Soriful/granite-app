@@ -1,10 +1,11 @@
+// app/(tabs)/insights.tsx
+
 import { Images } from '@/assets'
 import BudgetTrendChart from '@/components/BudgetTrendChart'
 import DailySpendingChart from '@/components/DailySpendingChart'
 import SpendingChart from '@/components/SpendingChart'
 import TopExpensesList from '@/components/TopExpensesList'
 import { Ionicons } from '@expo/vector-icons'
-import React from 'react'
 import { Image, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -16,7 +17,7 @@ const Insights = () => {
             <ScrollView
                 contentContainerStyle={{
                     flexGrow: 1,
-                    padding: 16,
+                    paddingHorizontal: 16, // Use horizontal padding only
                     display: "flex",
                     paddingTop: 65,
                     gap: 16,
@@ -31,22 +32,28 @@ const Insights = () => {
                         <Ionicons name="calendar-clear-outline" size={20} color="#919b94" />
                     </View>
                 </View>
+
                 {/* this is for trading char */}
+                {/* **NOTE:** The chart component handles its own internal structure now */}
                 <View style={{ backgroundColor: "#fefffe", borderRadius: 16 }} className="p-4">
                     <BudgetTrendChart />
                 </View>
+
                 {/* this is for Spending by Category */}
                 <View>
                     <SpendingChart />
                 </View>
+
                 {/* this is for top expensess list */}
                 <View>
                     <TopExpensesList />
                 </View>
+
                 {/* this is for DailySpendingChart */}
                 <View>
                     <DailySpendingChart />
                 </View>
+
                 {/* this is for Projected End-of-Month Balance */}
                 <View className="bg-white rounded-[16px] p-4 w-full flex flex-col gap-4">
                     <View className='flex flex-col gap-2'>
@@ -65,4 +72,4 @@ const Insights = () => {
     )
 }
 
-export default Insights 
+export default Insights

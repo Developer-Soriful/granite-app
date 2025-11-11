@@ -12,7 +12,7 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#e6f5ee", paddingTop: 8 }}
+      style={styles.dailyBudgetContainer}
     >
       <ScrollView
         contentContainerStyle={{
@@ -55,20 +55,8 @@ export default function Dashboard() {
 
 const styles = StyleSheet.create({
   dailyBudgetContainer: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingLeft: 18,
-    paddingRight: 18,
-    paddingTop: 12,
-    paddingBottom: 12,
-    backgroundColor: "#fefffe",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(143, 192, 169, 1)",
-    width: "100%",
-    gap: 8,
+    flex: 1, backgroundColor: "#e6f5ee", paddingTop: 8,
+    fontFamily: "Instrument Sans"
   },
   card: {
     backgroundColor: "#fefffe",

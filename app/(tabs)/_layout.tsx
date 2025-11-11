@@ -3,11 +3,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Tabs } from "expo-router";
 
-const ACTIVE_COLOR = '#4c8166';
-const INACTIVE_COLOR = '#909a94';
-const ACTIVE_BG_COLOR = '#e6f5ee';
-const BORDER_COLOR = "#dfe4e3";
-
 export default function TabLayout() {
     return (
         <Tabs
@@ -21,7 +16,7 @@ export default function TabLayout() {
                 name="index"
                 options={{
                     title: "Dashboard",
-                    tabBarIcon: ({ color }) => (
+                    tabBarIcon: ({ color }: { color: string }) => (
                         <MaterialCommunityIcons
                             name="view-dashboard-outline"
                             size={24}
@@ -35,7 +30,7 @@ export default function TabLayout() {
                 name="calendar"
                 options={{
                     title: "Calendar",
-                    tabBarIcon: ({ color }) => (
+                    tabBarIcon: ({ color }: { color: string }) => (
                         <Ionicons name="calendar-clear-outline" size={24} color={color} />
                     ),
                 }}
@@ -45,17 +40,11 @@ export default function TabLayout() {
                 name="insights"
                 options={{
                     title: "Insights",
-                    tabBarIcon: ({ color }) => (
+                    tabBarIcon: ({ color }: { color: string }) => (
                         <MaterialCommunityIcons name="finance" size={24} color={color} />
                     ),
                 }}
             />
-            <Tabs.Screen name="settings" options={{
-                title: "Settings",
-                tabBarIcon: ({ color }) => (
-                    <Ionicons name="settings-outline" size={24} color={color} />
-                ),
-            }} />
         </Tabs>
     );
 }
