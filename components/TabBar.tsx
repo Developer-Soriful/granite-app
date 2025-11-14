@@ -4,14 +4,28 @@ import { PlatformPressable, Text } from '@react-navigation/elements';
 import { useLinkBuilder } from '@react-navigation/native';
 import { View } from 'react-native';
 
-
 export default function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     const { buildHref } = useLinkBuilder();
 
+    // Move icon object outside the map function
+    const icon = {
+        index: (props: any) => <MaterialCommunityIcons
+            name="view-dashboard-outline"
+            size={24}
+            {...props}
+        />,
+        calendar: (props: any) => <Ionicons name="calendar-clear-outline" size={24} {...props} />,
+        insights: (props: any) => <MaterialCommunityIcons name="finance" size={24} {...props} />,
+        settings: (props: any) => <MaterialCommunityIcons name="cog-outline" size={24} {...props} />
+    }
+
     return (
-        <View className='w-full flex justify-center  items-center p-2  h-[70px]  bg-white rounded-tl-[16px] rounded-tr-[16px] border-[#dfe4e3] border-t-[2px] border-l-[1px] border-r-[1px]' style={{ flexDirection: 'row' }}>
+        <View className='w-full flex justify-center items-center p-2 h-[70px] bg-white rounded-tl-[16px] rounded-tr-[16px] border-[#dfe4e3] border-t-[2px] border-l-[1px] border-r-[1px]' style={{ flexDirection: 'row' }}>
             {state.routes.map((route: any, index: number) => {
                 const { options } = descriptors[route.key];
+                if (options.tabBarButton) {
+                    return null;
+                }
                 const label =
                     options.tabBarLabel !== undefined
                         ? options.tabBarLabel
@@ -39,34 +53,36 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
                         target: route.key,
                     });
                 };
-                // this is for icon
-                const icon = {
-                    index: (props: any) => <MaterialCommunityIcons
-                        name="view-dashboard-outline"
-                        size={24}
-                        {...props}
-                    />,
-                    calendar: (props: any) => <Ionicons name="calendar-clear-outline" size={24} {...props} />,
-                    insights: (props: any) => <MaterialCommunityIcons name="finance" size={24} {...props} />
-                }
+
+                // Get the icon component
+                const IconComponent = icon[route.name as keyof typeof icon];
+
                 return (
                     <PlatformPressable
-                        className='flex justify-center items-center '
-                        key={index}
+                        className='flex justify-center items-center'
+                        key={route.key}
                         href={buildHref(route.name, route.params)}
                         accessibilityState={isFocused ? { selected: true } : {}}
                         accessibilityLabel={options.tabBarAccessibilityLabel}
                         testID={options.tabBarButtonTestID}
                         onPress={onPress}
                         onLongPress={onLongPress}
-                        style={{ flex: 1, borderRadius: 12, height: "100%", backgroundColor: isFocused ? "#e7f4ee" : "transparent" }}
+                        style={{
+                            flex: 1,
+                            borderRadius: 12,
+                            height: "100%",
+                            backgroundColor: isFocused ? "#e7f4ee" : "transparent"
+                        }}
                     >
                         <Text>
-                            {icon[route.name as keyof typeof icon]({
-                                color: isFocused ? "#4c8167" : "#68716c"
-                            })}
+                            <IconComponent color={isFocused ? "#4c8167" : "#68716c"} />
                         </Text>
-                        <Text style={{ fontWeight: 700, fontSize: 12, paddingTop: 2, color: isFocused ? "#4c8167" : "#68716c" }}>
+                        <Text style={{
+                            fontWeight: 700,
+                            fontSize: 12,
+                            paddingTop: 2,
+                            color: isFocused ? "#4c8167" : "#68716c"
+                        }}>
                             {label}
                         </Text>
                     </PlatformPressable>

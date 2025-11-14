@@ -1,13 +1,19 @@
 import { Images } from '@/assets';
 import { MaterialIcons } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const Header = () => {
-    const [modalVisible, setModalVisible] = useState(false);
+    const [notificationModalVisible, setNotificationModalVisible] = useState(false);
+    const [settingsModalVisible, setSettingsModalVisible] = useState(false);
 
-    // Sample notification data - Replace with your API data
+    const handleSettingsToggle = () => {
+        setSettingsModalVisible(true);
+    };
+
+    // Sample notification data
     const notifications = [
         {
             id: 1,
@@ -35,52 +41,47 @@ const Header = () => {
         }
     ];
 
+    const handleSettings = () => {
+        console.log('Settings pressed');
+        router.push('/(tabs)/settings')
+    };
+
+    const handleLogout = () => {
+        console.log('Logout pressed');
+        // Add your logout logic here
+        setSettingsModalVisible(false);
+    };
+
     return (
         <>
             <View style={styles.header}>
-                {/* this is for icon image */}
+                {/* Logo Section */}
                 <View style={styles.header_img}>
                     <Image source={Images.header_img} />
                     <Text className='font-sans-condensed font-bold' style={styles.header_text}>Granite</Text>
                 </View>
 
-                {/* this is for notification profile and arrow icon part */}
+                {/* Icons Section */}
                 <View style={styles.header_icon}>
-                    <View style={{
-                        borderRightColor: "#dfe4e3",
-                        borderRightWidth: 1,
-                        paddingRight: 8
-                    }}>
+                    <View style={styles.notificationContainer}>
                         <TouchableOpacity
-                            onPress={() => setModalVisible(true)}
+                            onPress={() => setNotificationModalVisible(true)}
                             style={{ position: "relative" }}
                         >
                             <Ionicons name="notifications-outline" size={24} color="black" />
-                            <Text style={{
-                                position: "absolute",
-                                top: 4,
-                                right: 4,
-                                backgroundColor: "#e55c17",
-                                color: "white",
-                                borderRadius: 100,
-                                padding: 2,
-                                height: 6,
-                                width: 6,
-                                borderColor: "white",
-                                borderWidth: 1
-                            }}></Text>
+                            <View style={styles.notificationBadge} />
                         </TouchableOpacity>
                     </View>
 
-                    <View style={{ paddingLeft: 8 }}>
+                    <View style={styles.profileContainer}>
                         <View style={styles.header_icon_text}>
-                            <Text style={{
-                                fontWeight: "bold",
-                                color: "white"
-                            }}>M</Text>
+                            <Text style={styles.profileInitial}>M</Text>
                         </View>
                     </View>
-                    <MaterialIcons name="keyboard-arrow-down" size={24} color="black" />
+
+                    <TouchableOpacity onPress={handleSettingsToggle}>
+                        <MaterialIcons name="keyboard-arrow-down" size={24} color="black" />
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -88,31 +89,29 @@ const Header = () => {
             <Modal
                 animationType="slide"
                 transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
+                visible={notificationModalVisible}
+                onRequestClose={() => setNotificationModalVisible(false)}
             >
                 <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
-                    onPress={() => setModalVisible(false)}
+                    onPress={() => setNotificationModalVisible(false)}
                 >
                     <TouchableOpacity
                         activeOpacity={1}
                         onPress={(e) => e.stopPropagation()}
                     >
                         <View style={styles.modalContent}>
-                            {/* Modal Header */}
                             <View style={styles.modalHeader}>
                                 <Text style={styles.modalTitle}>Notifications</Text>
                                 <TouchableOpacity
-                                    onPress={() => setModalVisible(false)}
+                                    onPress={() => setNotificationModalVisible(false)}
                                     style={styles.closeButton}
                                 >
                                     <Ionicons name="close" size={24} color="#6B7280" />
                                 </TouchableOpacity>
                             </View>
 
-                            {/* Notifications List */}
                             <ScrollView
                                 style={styles.notificationsList}
                                 showsVerticalScrollIndicator={false}
@@ -143,6 +142,44 @@ const Header = () => {
                     </TouchableOpacity>
                 </TouchableOpacity>
             </Modal>
+
+            {/* Settings Modal - Slides from right */}
+            <Modal
+                animationType='slide'
+                transparent={true}
+                visible={settingsModalVisible}
+                onRequestClose={() => setSettingsModalVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.settingsModalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setSettingsModalVisible(false)}
+                >
+                    <TouchableOpacity
+                        activeOpacity={1}
+                        onPress={(e) => e.stopPropagation()}
+                        style={styles.settingsModalContent}
+                    >
+                        {/* Settings Button */}
+                        <TouchableOpacity
+                            style={styles.settingsButton}
+                            onPress={handleSettings}
+                        >
+                            <Ionicons name="settings-outline" size={20} color="#111827" />
+                            <Text style={styles.settingsButtonText}>Settings</Text>
+                        </TouchableOpacity>
+
+                        {/* Logout Button */}
+                        <TouchableOpacity
+                            style={[styles.settingsButton, styles.logoutButton]}
+                            onPress={handleLogout}
+                        >
+                            <Ionicons name="log-out-outline" size={20} color="#DC2626" />
+                            <Text style={[styles.settingsButtonText, styles.logoutText]}>Logout</Text>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
         </>
     );
 };
@@ -167,7 +204,6 @@ const styles = StyleSheet.create({
     header_text: {
         fontSize: 20,
         fontWeight: "bold",
-        // fontFamily: "InstrumentSans"
     },
     header_icon: {
         display: "flex",
@@ -186,7 +222,32 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center"
     },
-    // Modal Styles
+    profileInitial: {
+        fontWeight: "bold",
+        color: "white"
+    },
+    notificationContainer: {
+        borderRightColor: "#dfe4e3",
+        borderRightWidth: 1,
+        paddingRight: 8
+    },
+    notificationBadge: {
+        position: "absolute",
+        top: 4,
+        right: 4,
+        backgroundColor: "#e55c17",
+        borderRadius: 100,
+        padding: 2,
+        height: 6,
+        width: 6,
+        borderColor: "white",
+        borderWidth: 1
+    },
+    profileContainer: {
+        paddingLeft: 8
+    },
+
+    // Notification Modal Styles
     modalOverlay: {
         flex: 1,
         paddingTop: 73,
@@ -258,5 +319,46 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#434c49',
         lineHeight: 20,
+    },
+
+    // Settings Modal Styles
+    settingsModalOverlay: {
+        flex: 1,
+        alignItems: 'flex-end',
+        paddingTop: 73,
+        paddingRight: 16,
+    },
+    settingsModalContent: {
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 8,
+        width: 160,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    settingsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        gap: 12,
+    },
+    logoutButton: {
+        borderTopWidth: 1,
+        borderTopColor: '#F3F4F6',
+    },
+    settingsButtonText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#111827',
+    },
+    logoutText: {
+        color: '#DC2626',
     },
 });

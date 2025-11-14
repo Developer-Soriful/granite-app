@@ -49,13 +49,13 @@ const RecentTransactionsHistory = () => {
             <View className="flex flex-row gap-2 w-full">
                 {/* Change w-full to flex-1 here */}
                 <TouchableOpacity className="px-5 py-4 bg-white border border-[#f1f4f3] rounded-[12px] flex flex-row items-center justify-between flex-1">
-                    <Text className="text-sm text-[#4c8166] font-medium">Add manual</Text>
+                    <Text className="text-sm text-[#4c8167] font-medium">Add manual</Text>
                     <Feather name="plus" size={18} color="#4B5563" />
                 </TouchableOpacity>
 
                 {/* Change w-full to flex-1 here */}
                 <TouchableOpacity className="px-5 py-4 bg-white border border-[#f1f4f3] rounded-[12px] flex flex-row items-center justify-between flex-1">
-                    <Text className="text-sm text-[#4c8166] font-medium">Connect Bank</Text>
+                    <Text className="text-sm text-[#4c8167] font-medium">Connect Bank</Text>
                     <Entypo name="link" size={20} color="#4c8166" />
                 </TouchableOpacity>
             </View>

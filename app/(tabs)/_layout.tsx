@@ -11,7 +11,6 @@ export default function TabLayout() {
                 headerShown: false,
             }}
         >
-
             <Tabs.Screen
                 name="index"
                 options={{
@@ -43,6 +42,17 @@ export default function TabLayout() {
                     tabBarIcon: ({ color }: { color: string }) => (
                         <MaterialCommunityIcons name="finance" size={24} color={color} />
                     ),
+                }}
+            />
+
+            <Tabs.Screen
+                name="settings"
+                options={{
+                    title: "Settings",
+                    tabBarIcon: ({ color }) => (
+                        <Ionicons name="settings-outline" size={24} color={color} />
+                    ),
+                    tabBarButton: () => null,
                 }}
             />
         </Tabs>
