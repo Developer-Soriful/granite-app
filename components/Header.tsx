@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     // Modal Styles
     modalOverlay: {
         flex: 1,
-        paddingTop: 61,
+        paddingTop: 73,
         paddingHorizontal: 16,
     },
     modalContent: {

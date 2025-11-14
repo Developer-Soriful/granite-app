@@ -1,4 +1,5 @@
 import ForecastFuture from "@/components/ForecastFuture";
+import Header from "@/components/Header";
 import RecentTransactionsHistory from "@/components/RecentTransactionsHistory";
 import SpendingInsights from "@/components/SpendingInsights";
 import SpendMoney from "@/components/SpendMoney";
@@ -6,20 +7,30 @@ import TransactionsOverview from "@/components/TransactionsOverview";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-
 export default function Dashboard() {
-
-
   return (
-    <SafeAreaView
-      style={styles.dailyBudgetContainer}
-    >
+    <SafeAreaView style={styles.dailyBudgetContainer}>
+      <View
+        className="rounded-bl-[16px] rounded-br-[16px]"
+        style={{
+          position: "absolute",
+          backgroundColor: "#e6f5ee",
+          top: 16,
+          left: 0,
+          right: 0,
+          zIndex: 9,
+          marginLeft: 16,
+          marginRight: 16,
+        }}
+      >
+        <Header />
+      </View>
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
           padding: 16,
           display: "flex",
-          paddingTop: 65,
+          paddingTop: 45,
           gap: 16,
         }}
         showsVerticalScrollIndicator={false}
@@ -28,13 +39,13 @@ export default function Dashboard() {
         <SpendMoney />
 
         {/* Forecast Future Daily Budget section */}
-        <View style={{
-          backgroundColor: "#fefffe",
-          borderRadius: 16,
-        }}>
-          <ForecastFuture currentAvg={50.25}
-            numberOfDays={30}
-            maxValue={200} />
+        <View
+          style={{
+            backgroundColor: "#fefffe",
+            borderRadius: 16,
+          }}
+        >
+          <ForecastFuture currentAvg={50.25} numberOfDays={30} maxValue={200} />
         </View>
         {/* this is for Spending Insights */}
         <View>
@@ -55,8 +66,10 @@ export default function Dashboard() {
 
 const styles = StyleSheet.create({
   dailyBudgetContainer: {
-    flex: 1, backgroundColor: "#e6f5ee", paddingTop: 8,
-    fontFamily: "Instrument Sans"
+    flex: 1,
+    backgroundColor: "#e6f5ee",
+    paddingTop: 8,
+    fontFamily: "Instrument Sans",
   },
   card: {
     backgroundColor: "#fefffe",
