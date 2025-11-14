@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 // --- Expo Icon Imports ---
 import { Images } from '@/assets';
 import { Entypo, Feather } from '@expo/vector-icons';
@@ -82,7 +82,7 @@ const RecentTransactionsHistory = () => {
             </View>
 
             {/* Transactions List */}
-            <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+            <View className="flex-1">
                 {transactionsData.map((section, index) => (
                     <View className='flex flex-col gap-1 mt-3' key={index}>
                         {/* Date Header */}
@@ -104,7 +104,7 @@ const RecentTransactionsHistory = () => {
                         </View>
                     </View>
                 ))}
-            </ScrollView>
+            </View>
         </View>
     );
 };

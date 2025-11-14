@@ -193,9 +193,9 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-        <View>
-            <HomeHeader/>
-        </View>
+      <View>
+        <HomeHeader />
+      </View>
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
@@ -301,9 +301,8 @@ export default function SignupScreen() {
 
             {/* Continue Button */}
             <TouchableOpacity
-              className={`w-full px-3 py-4 bg-[#338059] rounded-2xl flex-row items-center justify-center ${
-                isPending ? "opacity-50" : ""
-              }`}
+              className={`w-full px-3 py-4 bg-[#338059] rounded-2xl flex-row items-center justify-center ${isPending ? "opacity-50" : ""
+                }`}
               onPress={handleSubmit}
               disabled={isPending}
             >
@@ -327,9 +326,8 @@ export default function SignupScreen() {
                   </View>
                 ) : (
                   <Text
-                    className={`text-sm text-center ${
-                      isError ? "text-red-500" : "text-green-500"
-                    }`}
+                    className={`text-sm text-center ${isError ? "text-red-500" : "text-green-500"
+                      }`}
                   >
                     {message}
                   </Text>

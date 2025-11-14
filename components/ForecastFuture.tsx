@@ -100,13 +100,25 @@ const ForecastFuture = ({ currentAvg, numberOfDays, maxValue }: BudgetComparison
                             <Text style={{ fontSize: 16, fontWeight: '600' }}>New Average Daily Budget</Text>
                             <Text style={{ fontSize: 24, fontWeight: '600' }}>${calculatedAvg.toFixed(2)}</Text>
                         </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
+                        <View style={{
+                            flexDirection: 'row',
+                            width: "100%",
+                            alignItems: 'flex-start',
+                            gap: 8,
+                            flexWrap: 'wrap'
+                        }}>
                             <AntDesign
                                 name={isHigher ? "arrow-up" : "arrow-down"}
-                                size={24}
+                                size={20}
                                 color={isHigher ? "rgba(92,153,124,1)" : "rgba(220,100,100,1)"}
+                                style={{ marginTop: 2 }}
                             />
-                            <Text style={{ fontSize: 14, color: isHigher ? 'rgba(92,153,124,1)' : 'rgba(220,100,100,1)' }}>
+                            <Text style={{
+                                fontSize: 14,
+                                flex: 1,
+                                flexShrink: 1,
+                                color: isHigher ? 'rgba(92,153,124,1)' : 'rgba(220,100,100,1)'
+                            }}>
                                 ${Math.abs(difference).toFixed(2)} {isHigher ? 'higher' : 'lower'} than your current average daily budget
                             </Text>
                         </View>
