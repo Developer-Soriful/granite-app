@@ -1,4 +1,4 @@
-// app/(tabs)/insights.tsx
+
 
 import { Images } from "@/assets";
 import BudgetTrendChart from "@/components/BudgetTrendChart";
@@ -98,3 +98,60 @@ const Insights = () => {
 };
 
 export default Insights;
+// import BudgetTrendChart from '@/components/insightsComponent/BudgetTrendChart';
+// import CategorySpendingChart from '@/components/insightsComponent/CategorySpendingChart';
+// import MonthSelector from '@/components/insightsComponent/MonthSelector';
+// import ProjectedEOMBalance from '@/components/insightsComponent/ProjectedEOMBalance';
+// import SpendingVelocityChart from '@/components/insightsComponent/SpendingVelocityChart';
+// import TopExpensesList from '@/components/insightsComponent/TopExpensesList';
+// import React, { useState } from 'react';
+// import { ScrollView, Text, View } from 'react-native';
+// import { SafeAreaView } from 'react-native-safe-area-context';
+
+// export default function InsightsPage() {
+//   const [selectedDate, setSelectedDate] = useState(new Date());
+
+//   return (
+//     <SafeAreaView className="flex-1 bg-white">
+//       <ScrollView className="flex-1 p-4">
+//         {/* Header with Month Selector */}
+//         <View className="flex-col md:flex-row justify-between mb-6">
+//           <Text className="text-2xl font-semibold text-[#061F12] mb-4 md:mb-0">
+//             Insights
+//           </Text>
+//           <MonthSelector
+//             selectedDate={selectedDate}
+//             onDateChange={setSelectedDate}
+//             minDate={new Date(2024, 0, 1)}
+//           />
+//         </View>
+
+//         {/* Budget Trend Chart */}
+//         <View className="mb-5">
+//           <BudgetTrendChart selectedDate={selectedDate} />
+//         </View>
+
+//         {/* Category Spending and Top Expenses */}
+//         <View className="flex-col md:flex-row gap-4 mb-4">
+//           <View className="md:basis-2/3 mb-4 md:mb-0">
+//             <CategorySpendingChart selectedDate={selectedDate} />
+//             {/* <SpendingChart/> */}
+//           </View>
+//           <View className="md:basis-1/3">
+//             <TopExpensesList selectedDate={selectedDate} />
+//           </View>
+//         </View>
+
+//         {/* Spending Velocity and Projected EOM Balance */}
+//         <View className="flex-col lg:flex-row gap-4 my-4">
+//           <View className="lg:basis-2/3 mb-4 lg:mb-0">
+//             <SpendingVelocityChart selectedDate={selectedDate} />
+//           </View>
+//           <View className="lg:basis-1/3 mt-5 lg:mt-0">
+//             <ProjectedEOMBalance selectedDate={selectedDate} />
+//           </View>
+//         </View>
+//       </ScrollView>
+//     </SafeAreaView>
+//   );
+// }

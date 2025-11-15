@@ -9,19 +9,17 @@ import { SectionRefs } from '@/types/navigation'
 import Button from '@/ui/Button'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import React, { useRef, useState, LegacyRef } from 'react'
+import React, { LegacyRef, useRef, useState } from 'react'
 import {
     Image,
     ImageBackground,
     NativeScrollEvent,
     NativeSyntheticEvent,
     ScrollView,
-    ScrollViewProps,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
-    ViewProps
 } from 'react-native'
 
 const HomePage = () => {
