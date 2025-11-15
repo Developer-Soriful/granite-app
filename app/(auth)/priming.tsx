@@ -74,7 +74,7 @@ export default function PrimingPage() {
         } else {
             console.log('Priming answers:', updatedAnswers);
             // Here you can save to AsyncStorage or send to your backend
-            router.push('/');
+            router.push('/(auth)/guess');
         }
     };
 
