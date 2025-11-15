@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Dimensions, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 
 interface ChartDataPoint {
@@ -9,10 +9,6 @@ interface ChartDataPoint {
 }
 
 const BudgetTrendChart = () => {
-    // Calculate width based on the screen width minus the fixed padding applied in the parent (16px left + 16px right = 32px)
-    const screenWidth = Dimensions.get("window").width;
-    const chartWidth = screenWidth - 32;
-
     const [selectedPoint, setSelectedPoint] = useState<{
         x: number;
         y: number;
@@ -34,15 +30,34 @@ const BudgetTrendChart = () => {
     const targetData = safeData.map((item) => item.target);
     const actualData = safeData.map((item) => item.actual);
 
+    // 🛠️ MODIFIED: This function now also needs to handle deselecting the point
     const handleDataPointClick = (data: any) => {
-        const { x, y, index } = data;
-        setSelectedPoint({ x, y, index });
+        const { x, y, index, datasetIndex } = data;
+
+        // The library sometimes returns the same point if touched twice, 
+        // and doesn't tell us which dataset, so we just check the index.
+        const newPoint = { x, y, index };
+
+        // Check if the same point was clicked again (to close the tooltip)
+        if (selectedPoint && selectedPoint.index === index) {
+            setSelectedPoint(null);
+        } else {
+            setSelectedPoint(newPoint);
+        }
     };
 
-    // Add a state to track if the chart is ready
+    // 💡 NEW FUNCTION: Handles touches outside the chart/tooltip area
+    const handleGlobalTouch = () => {
+        // Only dismiss the tooltip if one is currently visible
+        if (selectedPoint) {
+            setSelectedPoint(null);
+            return true; // Claim responder to stop propagation if a point was selected
+        }
+        return false; // Don't claim responder if no tooltip is open
+    };
+
     const [isReady, setIsReady] = useState(false);
 
-    // Wait for the component to mount before rendering the chart
     useEffect(() => {
         setIsReady(true);
     }, []);
@@ -56,7 +71,12 @@ const BudgetTrendChart = () => {
     }
 
     return (
-        <View style={styles.container}>
+        // 🛠️ MODIFIED: Added onStartShouldSetResponder and onResponderRelease to the container
+        <View
+            style={styles.container}
+            onStartShouldSetResponder={handleGlobalTouch}
+            onResponderRelease={handleGlobalTouch}
+        >
             {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.title}>
@@ -67,129 +87,128 @@ const BudgetTrendChart = () => {
                 </Text>
             </View>
 
-            {/* Chart */}
+            {/* Chart Container with Horizontal Scroll */}
             {safeData.length > 0 ? (
-                <View style={styles.chartContainer}>
-                    <LineChart
-                        data={{
-                            labels,
-                            datasets: [
-                                {
-                                    data: targetData,
-                                    color: (opacity = 1) => `rgba(52, 168, 83, ${opacity})`,
-                                    strokeWidth: 2,
-                                    strokeDashArray: [8, 4],
-                                    withDots: false,
+                <View style={styles.chartWrapper}>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={true}
+                        contentContainerStyle={styles.scrollContent}
+                    >
+                        <LineChart
+                            data={{
+                                labels,
+                                datasets: [
+                                    {
+                                        data: targetData,
+                                        color: (opacity = 1) => `rgba(92, 153, 124, ${opacity})`,
+                                        strokeWidth: 2,
+                                        strokeDashArray: [8, 4],
+                                        withDots: false,
+                                    },
+                                    {
+                                        data: actualData,
+                                        color: (opacity = 1) => `rgba(60, 110, 152, ${opacity})`,
+                                        strokeWidth: 3,
+                                    },
+                                ],
+                            }}
+                            width={Math.max(400, labels.length * 60)} // Dynamic width based on data points
+                            height={280}
+                            yAxisLabel="$"
+                            yAxisInterval={1}
+                            chartConfig={{
+                                backgroundColor: "#f8f9fa",
+                                backgroundGradientFrom: "#f8f9fa",
+                                backgroundGradientTo: "#f8f9fa",
+                                decimalPlaces: 0,
+                                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                                labelColor: (opacity = 1) => `rgba(156, 163, 175, ${opacity})`,
+                                style: {
+                                    borderRadius: 8,
                                 },
-                                {
-                                    data: actualData,
-                                    color: (opacity = 1) => `rgba(70, 111, 142, ${opacity})`,
-                                    strokeWidth: 3,
+                                propsForDots: {
+                                    r: "5",
+                                    strokeWidth: "3",
+                                    stroke: "#ffffff",
                                 },
-                            ],
-                        }}
-                        width={chartWidth}
-                        height={280}
-                        yAxisLabel="$"
-                        yAxisInterval={1}
-                        chartConfig={{
-                            backgroundColor: "#f8f9fa",
-                            backgroundGradientFrom: "#f8f9fa",
-                            backgroundGradientTo: "#f8f9fa",
-                            decimalPlaces: 0,
-                            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                            labelColor: (opacity = 1) => `rgba(156, 163, 175, ${opacity})`,
-                            style: {},
-                            propsForDots: {
-                                r: "5",
-                                strokeWidth: "3",
-                                stroke: "#ffffff",
-                                fill: "#466f8e",
-                            },
-                            propsForBackgroundLines: {
-                                strokeDasharray: "4, 4",
-                                stroke: "#d1d5db",
-                                strokeWidth: 1,
-                            },
-                            propsForLabels: {
-                                fontSize: 10,
-                            },
-                        }}
-                        onDataPointClick={handleDataPointClick}
-                    />
+                                propsForBackgroundLines: {
+                                    strokeDasharray: "4, 4",
+                                    stroke: "#d1d5db",
+                                    strokeWidth: 1,
+                                },
+                                propsForLabels: {
+                                    fontSize: 10,
+                                },
+                            }}
+                            bezier
+                            // 💡 IMPORTANT: Ensure the chart doesn't claim the responder system 
+                            // to allow the parent View to handle touches for dismissing the tooltip.
+                            onDataPointClick={handleDataPointClick}
+                            style={styles.chart}
+                        />
+                    </ScrollView>
 
                     {/* Tooltip */}
                     {selectedPoint && (
                         <View
-                            style={{
-                                position: "absolute",
-                                top: selectedPoint.y - 50,
-                                left: selectedPoint.x - 60,
-                                backgroundColor: "white",
-                                paddingHorizontal: 3,
-                                paddingVertical: 2,
-                                borderRadius: 4,
-                                shadowColor: "#000",
-                                shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.25,
-                                shadowRadius: 3.84,
-                                elevation: 5,
-                                borderColor: "#ddd",
-                                borderWidth: 1,
-                            }}
+                            // 💡 NEW: Added stopPropagation so clicking the tooltip doesn't close it immediately
+                            onStartShouldSetResponder={() => true}
+                            style={[
+                                styles.tooltip,
+                                {
+                                    // Tooltip position must be relative to the scroll container's content, 
+                                    // but fixed relative to the screen. 
+                                    // Adjusting top/left slightly for better positioning over the chart point
+                                    top: selectedPoint.y - 120,
+                                    left: selectedPoint.x - 120,
+                                }
+                            ]}
                         >
-                            <Text
-                                style={{
-                                    fontSize: 12,
-                                    fontWeight: "bold",
-                                    color: "#333",
-                                }}
-                            >
+                            <Text style={styles.tooltipDate}>
                                 {safeData[selectedPoint.index].date}
                             </Text>
-
                             <Text
-                                style={{
-                                    fontSize: 12,
-                                    color: "#f44336",
-                                    fontWeight: "bold",
-                                }}
+                                style={[
+                                    styles.tooltipStatus,
+                                    {
+                                        color: safeData[selectedPoint.index].actual >= safeData[selectedPoint.index].target
+                                            ? '#5c997c' // Green for Good/Within Target
+                                            : '#e43916' // Red for Overspending/Under Target
+                                    }
+                                ]}
                             >
-                                Under your target budget
+                                {safeData[selectedPoint.index].actual >= safeData[selectedPoint.index].target
+                                    ? "Within Target"
+                                    : "Overspent/Under Target"}
                             </Text>
-
-                            <Text className="text-xs text-gray-600">
-                                Actual: ${safeData[selectedPoint.index].actual}
+                            <Text style={styles.tooltipValue}>
+                                Actual: **${safeData[selectedPoint.index].actual}**
+                            </Text>
+                            <Text style={styles.tooltipValue}>
+                                Target: **${safeData[selectedPoint.index].target}**
                             </Text>
                         </View>
                     )}
                 </View>
             ) : (
-                <Text className="text-center text-gray-500">No chart data</Text>
+                <Text style={styles.noDataText}>No chart data</Text>
             )}
 
             {/* Legend */}
-            {/* ... (Your existing legend code is fine) ... */}
-            <View className="flex flex-col gap-3">
-                <View className="flex flex-row items-start  gap-1">
-                    <Text className="w-2 h-2 bg-[#5c997c] rounded-full top-[5px]"></Text>
-                    <View>
-                        <Text className="text-[12px] font-semibold">Target Daily Budget</Text>
-                        <Text className="text-[12px]">Shows your baseline daily budget</Text>
+            <View style={styles.legend}>
+                <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#5c997c' }]} />
+                    <View style={styles.legendTextContainer}>
+                        <Text style={styles.legendTitle}>Target Daily Budget</Text>
+                        <Text style={styles.legendDescription}>Shows your baseline daily budget</Text>
                     </View>
                 </View>
-                <View className="flex flex-row items-start  gap-1">
-                    <Text className="w-2 h-2 bg-[#3c6e98] rounded-full top-[5px]"></Text>
-                    <View>
-                        <Text className="text-[12px] font-semibold">Target Daily Budget</Text>
-                        <Text className="text-[12px]">Shows your baseline daily budget</Text>
-                    </View>
-                </View>
-                <View className="flex flex-row items-start  gap-1">
-                    <Text className="w-2 h-2 bg-[#e43916] rounded-full top-[5px]"></Text>
-                    <View>
-                        <Text className="text-[12px] font-semibold">Target Daily Budget</Text>
-                        <Text className="text-[12px]">Shows your baseline daily budget</Text>
+                <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#3c6e98' }]} />
+                    <View style={styles.legendTextContainer}>
+                        <Text style={styles.legendTitle}>Actual Daily Budget</Text>
+                        <Text style={styles.legendDescription}>Updates based on your spending</Text>
                     </View>
                 </View>
             </View>
@@ -199,9 +218,8 @@ const BudgetTrendChart = () => {
 
 const styles = StyleSheet.create({
     container: {
-        flexDirection: 'column',
-        gap: 16,
-        padding: 16,
+        flex: 1,
+        padding: 12,
         backgroundColor: 'white',
         borderRadius: 12,
     },
@@ -225,11 +243,80 @@ const styles = StyleSheet.create({
         color: '#6b7280',
         lineHeight: 20,
     },
-    chartContainer: {
+    chartWrapper: {
         position: 'relative',
-        backgroundColor: '#f8f9fa',
         borderRadius: 8,
-        padding: 12,
+        marginBottom: 16,
+    },
+    scrollContent: {
+        paddingRight: 16,
+    },
+    chart: {
+        borderRadius: 8,
+        marginVertical: 8,
+    },
+    tooltip: {
+        position: 'absolute',
+        backgroundColor: 'white',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+        borderColor: '#ddd',
+        borderWidth: 1,
+        minWidth: 120,
+    },
+    tooltipDate: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 4,
+    },
+    tooltipStatus: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        marginBottom: 2,
+    },
+    tooltipValue: {
+        fontSize: 11,
+        color: '#6b7280',
+    },
+    noDataText: {
+        textAlign: 'center',
+        color: '#6b7280',
+        marginVertical: 20,
+    },
+    legend: {
+        gap: 12,
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 8,
+    },
+    legendDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginTop: 6,
+    },
+    legendTextContainer: {
+        flex: 1,
+    },
+    legendTitle: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#111827',
+        marginBottom: 2,
+    },
+    legendDescription: {
+        fontSize: 12,
+        color: '#6b7280',
+        lineHeight: 16,
     },
 });
 

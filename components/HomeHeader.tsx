@@ -108,8 +108,13 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
             } catch (error) {
                 console.error('Error in scrollTo:', error);
             }
-        }, 150); // Slightly reduced delay for better UX
+        }, 150);
     };
+
+    // this is for handle back home 
+    const handleBackHome = () => {
+        router.push("/")
+    }
     return (
         <>
             <View className='relative overflow-hidden'>
@@ -123,10 +128,10 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
                 <View
                     className={`flex flex-row justify-between items-center px-4 py-4 ${headerBg}`}
                 >
-                    <View className='flex flex-row items-center gap-2'>
+                    <TouchableOpacity onPress={handleBackHome} className='flex flex-row items-center gap-2'>
                         <Image source={Images.header_img} />
                         <Text className={`font-bold text-2xl ${headerText}`}>Granite</Text>
-                    </View>
+                    </TouchableOpacity>
 
                     <Pressable onPress={() => setMenuVisible(true)}>
                         <AntDesign

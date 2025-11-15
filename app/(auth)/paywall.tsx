@@ -1,4 +1,4 @@
-import { AntDesign, FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import { AntDesign, FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -50,7 +50,6 @@ export default function Paywall() {
     const [isLoading, setLoading] = useState(false);
     const currentPlan = pricing[billingCycle];
     const router = useRouter();
-
     const handleSubscribe = async () => {
         setLoading(true);
         try {
@@ -70,9 +69,22 @@ export default function Paywall() {
             setLoading(false);
         }
     };
-
+    // this is for handle back function 
+    const handleBack = () => {
+        // Check if we can go back, if not navigate to home
+        if (router.canGoBack()) {
+            router.back();
+        } else {
+            router.replace('/(tabs)'); // Fallback to home
+        }
+    }
     return (
         <SafeAreaView className="flex-1 bg-white">
+            <View className='px-4'>
+                <TouchableOpacity onPress={handleBack}>
+                    <Ionicons name="chevron-back" size={24} color="black" />
+                </TouchableOpacity>
+            </View>
             <ScrollView
                 className="flex-1"
                 contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}

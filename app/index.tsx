@@ -69,8 +69,12 @@ const HomePage = () => {
             >
                 <View className='w-full h-full px-4 flex flex-col gap-4 bg-white pt-[45px]'>
                     {/* this is for get started section */}
-                    <View className='bg-[#ebf3ee]  p-5 flex flex-col gap-4'>
-                        <Text className='font-bold text-[30px]'>
+                    <View className='bg-[#ebf3ee]  px-5 pt-5 flex flex-col gap-4 rounded-[24px] mt-10'>
+                        <Text className='font-bold text-[30px]'
+                            style={{
+                                lineHeight: 36
+                            }}
+                        >
                             Know Exactly
                             How Much You
                             Can Spend Today

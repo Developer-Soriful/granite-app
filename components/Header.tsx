@@ -1,13 +1,17 @@
 import { Images } from '@/assets';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Feather, FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const Header = () => {
     const [notificationModalVisible, setNotificationModalVisible] = useState(false);
     const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+    const [avatarModalVisible, setAvatarModalVisible] = useState(false);
+    const [supscriptionModalVisible, setSupscriptionModalVisible] = useState(false);
+    const navigation = useNavigation();
+    const router = useRouter();
 
     const handleSettingsToggle = () => {
         setSettingsModalVisible(true);
@@ -40,18 +44,38 @@ const Header = () => {
             isAlert: true
         }
     ];
-
     const handleSettings = () => {
         console.log('Settings pressed');
         router.push('/(tabs)/settings')
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         console.log('Logout pressed');
-        // Add your logout logic here
         setSettingsModalVisible(false);
-    };
 
+        setTimeout(() => {
+            // Navigate to auth screen instead of root
+            router.navigate('/(auth)');
+        }, 300);
+    };
+    // this is for handleAvater
+    const handleAvater = () => {
+        console.log('handleAvater pressed')
+        setAvatarModalVisible(false)
+        router.push('/(settings)/avater')
+    }
+    // this is for handleSupscription
+    const handleSupscription = () => {
+        console.log('handleSupscription pressed')
+        setSupscriptionModalVisible(false)
+        router.push('/(settings)/subscription')
+    }
+    // this is for handleNotification
+    const handleNotification = () => {
+        console.log('handleNotification pressed')
+        setSupscriptionModalVisible(false)
+        router.push('/(settings)/notification')
+    }
     return (
         <>
             <View style={styles.header}>
@@ -167,6 +191,30 @@ const Header = () => {
                         >
                             <Ionicons name="settings-outline" size={20} color="#111827" />
                             <Text style={styles.settingsButtonText}>Settings</Text>
+                        </TouchableOpacity>
+                        {/* Avatar Button */}
+                        <TouchableOpacity
+                            style={styles.settingsButton}
+                            onPress={handleAvater}
+                        >
+                            <Feather name="camera" size={20} color="black" />
+                            <Text style={styles.settingsButtonText}>Avatar</Text>
+                        </TouchableOpacity>
+                        {/* Supscription Button */}
+                        <TouchableOpacity
+                            style={styles.settingsButton}
+                            onPress={handleSupscription}
+                        >
+                            <FontAwesome5 name="user-edit" size={20} color="black" />
+                            <Text style={styles.settingsButtonText}>Supscription</Text>
+                        </TouchableOpacity>
+                        {/* Notification Button */}
+                        <TouchableOpacity
+                            style={styles.settingsButton}
+                            onPress={handleNotification}
+                        >
+                            <MaterialIcons name="notifications-none" size={24} color="black" />
+                            <Text style={styles.settingsButtonText}>Notification</Text>
                         </TouchableOpacity>
 
                         {/* Logout Button */}

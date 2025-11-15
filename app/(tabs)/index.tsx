@@ -7,7 +7,7 @@ import TransactionsOverview from "@/components/TransactionsOverview";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function Dashboard() {
+function Dashboard() {
   return (
     <SafeAreaView style={styles.dailyBudgetContainer}>
       <View
@@ -63,7 +63,7 @@ export default function Dashboard() {
     </SafeAreaView>
   );
 }
-
+export default Dashboard
 const styles = StyleSheet.create({
   dailyBudgetContainer: {
     flex: 1,

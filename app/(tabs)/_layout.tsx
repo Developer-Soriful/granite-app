@@ -1,9 +1,11 @@
 import TabBar from "@/components/TabBar";
+import { useBackHandler } from "@/hooks/useBackButton";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Tabs } from "expo-router";
 
 export default function TabLayout() {
+    useBackHandler();
     return (
         <Tabs
             tabBar={props => <TabBar {...props} />}
