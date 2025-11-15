@@ -3,7 +3,7 @@ import { Feather, FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const Header = () => {
     const [notificationModalVisible, setNotificationModalVisible] = useState(false);
@@ -70,7 +70,6 @@ const Header = () => {
         setSupscriptionModalVisible(false)
         router.push('/(settings)/subscription')
     }
-    // this is for handleNotification
     const handleNotification = () => {
         console.log('handleNotification pressed')
         setSupscriptionModalVisible(false)
@@ -89,7 +88,7 @@ const Header = () => {
                 <View style={styles.header_icon}>
                     <View style={styles.notificationContainer}>
                         <TouchableOpacity
-                            onPress={() => setNotificationModalVisible(true)}
+                            onPress={handleNotification}
                             style={{ position: "relative" }}
                         >
                             <Ionicons name="notifications-outline" size={24} color="black" />
@@ -108,64 +107,6 @@ const Header = () => {
                     </TouchableOpacity>
                 </View>
             </View>
-
-            {/* Notification Modal */}
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={notificationModalVisible}
-                onRequestClose={() => setNotificationModalVisible(false)}
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setNotificationModalVisible(false)}
-                >
-                    <TouchableOpacity
-                        activeOpacity={1}
-                        onPress={(e) => e.stopPropagation()}
-                    >
-                        <View style={styles.modalContent}>
-                            <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>Notifications</Text>
-                                <TouchableOpacity
-                                    onPress={() => setNotificationModalVisible(false)}
-                                    style={styles.closeButton}
-                                >
-                                    <Ionicons name="close" size={24} color="#6B7280" />
-                                </TouchableOpacity>
-                            </View>
-
-                            <ScrollView
-                                style={styles.notificationsList}
-                                showsVerticalScrollIndicator={false}
-                            >
-                                {notifications.map((notification, index) => (
-                                    <View
-                                        key={notification.id}
-                                        style={[
-                                            styles.notificationItem,
-                                            index !== notifications.length - 1 && styles.notificationBorder
-                                        ]}
-                                    >
-                                        <View style={styles.notificationHeader}>
-                                            <Text style={styles.notificationTitle}>
-                                                {notification.title}
-                                            </Text>
-                                            <Text style={styles.notificationDate}>
-                                                {notification.date}
-                                            </Text>
-                                        </View>
-                                        <Text style={styles.notificationMessage}>
-                                            {notification.message}
-                                        </Text>
-                                    </View>
-                                ))}
-                            </ScrollView>
-                        </View>
-                    </TouchableOpacity>
-                </TouchableOpacity>
-            </Modal>
 
             {/* Settings Modal - Slides from right */}
             <Modal
@@ -207,14 +148,6 @@ const Header = () => {
                         >
                             <FontAwesome5 name="user-edit" size={20} color="black" />
                             <Text style={styles.settingsButtonText}>Supscription</Text>
-                        </TouchableOpacity>
-                        {/* Notification Button */}
-                        <TouchableOpacity
-                            style={styles.settingsButton}
-                            onPress={handleNotification}
-                        >
-                            <MaterialIcons name="notifications-none" size={24} color="black" />
-                            <Text style={styles.settingsButtonText}>Notification</Text>
                         </TouchableOpacity>
 
                         {/* Logout Button */}

@@ -1,5 +1,7 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Button } from 'react-native-paper'; // Using RNP Button for loading state/style consistency
 
 // --- MOCK API AND TOAST REPLACEMENTS ---
@@ -90,19 +92,25 @@ export default function NotificationSettings({
             setIsPending(false);
         }
     };
-
+    // this is for handleNotificationModal
+    const handleNotificationModal = () => {
+        router.back()
+    }
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1"
+            className="flex-1 flex justify-center items-center bg-white "
         >
-            <ScrollView className="mx-auto w-full max-w-3xl px-4 py-8 bg-white dark:bg-gray-900">
-                <Text className="text-4xl font-semibold mb-8 text-gray-900 dark:text-gray-100">Notification Settings</Text>
+            <View className="w-full px-4 py-8 ">
+                <TouchableOpacity onPress={handleNotificationModal} className='mb-10'>
+                    <MaterialIcons name="arrow-back-ios-new" size={24} color="black" />
+                </TouchableOpacity>
+                <Text className="text-4xl font-semibold mb-8 text-gray-900 ">Notification Settings</Text>
 
                 {/* Form Content */}
-                <View className="space-y-6">
-                    <View className="rounded-2xl border border-gray-200 p-6 shadow-sm dark:bg-gray-800 dark:border-gray-700">
-                        <Text className="mb-4 text-xl font-medium text-gray-900 dark:text-gray-100">
+                <View className="">
+                    <View className="rounded-2xl border border-gray-200 p-6 shadow-sm">
+                        <Text className="mb-4 text-xl font-medium text-gray-900 ">
                             Budget Swing Alerts
                         </Text>
 
@@ -148,7 +156,7 @@ export default function NotificationSettings({
                 <SubmitButton isLoading={isPending} onPress={handleSubmit}>
                     Save Settings
                 </SubmitButton>
-            </ScrollView>
+            </View>
         </KeyboardAvoidingView>
     );
 }
