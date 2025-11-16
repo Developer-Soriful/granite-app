@@ -1,8 +1,7 @@
-import { AntDesign, Feather, MaterialIcons } from '@expo/vector-icons';
+import { AntDesign, Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -239,10 +238,15 @@ export default function PlanSummaryPage() {
     const nudge = getNudgeContent();
 
     return (
-        <ScrollView
+        <View
             style={styles.scrollContainer}
             contentContainerStyle={styles.scrollContent}
         >
+            <View className='px-4 py-6'>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Ionicons name="chevron-back" size={24} color="black" />
+                </TouchableOpacity>
+            </View>
             <View style={styles.container}>
                 <View style={styles.card}>
                     {/* Header */}
@@ -327,7 +331,7 @@ export default function PlanSummaryPage() {
                     </TouchableOpacity>
                 </View>
             </View>
-        </ScrollView>
+        </View>
     );
 }
 
@@ -341,7 +345,6 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
         padding: 16,
         backgroundColor: '#F9FAFB',

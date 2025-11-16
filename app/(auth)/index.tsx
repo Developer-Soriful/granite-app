@@ -2,12 +2,13 @@ import HomeHeader from "@/components/HomeHeader";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
@@ -167,13 +168,13 @@ export default function LoginScreen() {
       message.toLowerCase().includes("does not meet"));
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
       <HomeHeader />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 px-6 justify-center py-8">
+        <View style={{ flex: 1 }} className="px-6 justify-center py-8">
           {/* Title Section */}
           <Text className="text-2xl font-bold text-center text-black mb-2">
             Welcome Back
@@ -261,9 +262,8 @@ export default function LoginScreen() {
             {/* Message Display */}
             {message ? (
               <Text
-                className={`text-sm text-center mt-2 ${
-                  isError ? "text-red-500" : "text-green-500"
-                }`}
+                className={`text-sm text-center mt-2 ${isError ? "text-red-500" : "text-green-500"
+                  }`}
               >
                 {message}
               </Text>
@@ -285,6 +285,6 @@ export default function LoginScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }

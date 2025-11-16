@@ -5,7 +5,7 @@ import { Text, TouchableOpacity } from 'react-native'
 
 const Button = () => {
     const goToTabs = () => {
-        router.replace('/(auth)/paywall')
+        router.replace('/paywall')
     }
     return (
         <TouchableOpacity onPress={goToTabs} style={{

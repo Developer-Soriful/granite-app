@@ -1,7 +1,9 @@
 import SubscriptionComponent from '@/components/settings/Subscription';
+import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Define Subscription Type (Must match what SubscriptionComponent expects)
 interface SubscriptionType {
@@ -117,6 +119,11 @@ export default function SubscriptionScreen() {
     // Pass the fetched subscription data and the configuration to the UI component
     return (
         <View style={styles.container}>
+            <View className='px-4 py-6'>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Ionicons name="chevron-back" size={24} color="black" />
+                </TouchableOpacity>
+            </View>
             <SubscriptionComponent
                 subscription={state.subscription}
                 config={APP_CONFIG} // Pass the necessary config props
@@ -129,10 +136,7 @@ export default function SubscriptionScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
         backgroundColor: '#f8f8f8',
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     loadingText: {
         marginTop: 10,

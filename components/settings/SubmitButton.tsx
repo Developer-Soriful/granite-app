@@ -10,6 +10,7 @@ interface SubmitButtonProps {
     size?: 'xs' | 'sm' | 'base' | 'lg';
     variant?: 'default' | 'outline' | 'ghost';
     onPress?: (event: GestureResponderEvent) => void;
+    // NOTE: children should ideally be a single Text component or a string for best results.
     children: React.ReactNode;
     isLoading?: boolean;
     disabled?: boolean;
@@ -42,6 +43,41 @@ const variantTextColors = {
     ghost: 'text-[#338059]',
 };
 
+/**
+ * Handles rendering the button label, correctly applying styles
+ * and preventing illegal nested <Text> components.
+ */
+const renderButtonLabel = (children: React.ReactNode, size: keyof typeof textSizes, variant: keyof typeof variantTextColors) => {
+    // Determine the text classes that must be applied to the label
+    const textClasses = `
+        ${textSizes[size]} 
+        font-semibold 
+        ${variantTextColors[variant]}
+    `;
+
+    // If the child is already a Text element (as in OtpVerifyPage.jsx)
+    if (React.isValidElement(children) && children.type === Text) {
+        // We use React.cloneElement to merge the new styles into the existing Text component.
+        const existingClassName = children.props.className || '';
+        return React.cloneElement(children, {
+            className: `${existingClassName} ${textClasses}`
+        });
+    }
+
+    // If the child is a simple string, wrap it in a styled Text component
+    if (typeof children === 'string' || typeof children === 'number') {
+        return (
+            <Text className={textClasses}>
+                {children}
+            </Text>
+        );
+    }
+
+    // Fallback: render any other node directly
+    return children;
+};
+
+
 export default function SubmitButton({
     size = 'base',
     variant = 'default',
@@ -63,26 +99,19 @@ export default function SubmitButton({
         }
     };
 
-    const getPressedTextStyle = () => {
-        if (variant === 'outline') {
-            return 'active:text-white';
-        }
-        return '';
-    };
-
     return (
         <TouchableOpacity
             onPress={onPress}
             disabled={isDisabled}
             className={`
-        ${variants[variant]} 
-        ${sizes[size]} 
-        ${getPressedStyle()}
-        rounded-2xl
-        flex flex-row items-center justify-center gap-2
-        ${isDisabled ? 'opacity-50' : ''}
-        ${className}
-      `}
+        ${variants[variant]} 
+        ${sizes[size]} 
+        ${getPressedStyle()}
+        rounded-2xl
+        flex flex-row items-center justify-center gap-2
+        ${isDisabled ? 'opacity-50' : ''}
+        ${className}
+      `}
             style={
                 variant === 'outline' ? {
                     borderWidth: 1,
@@ -94,14 +123,9 @@ export default function SubmitButton({
                 <ActivityIndicator size="small" color={variant === 'default' ? '#FFFFFF' : '#338059'} />
             ) : null}
 
-            <Text className={`
-        ${textSizes[size]} 
-        font-semibold 
-        ${variantTextColors[variant]}
-        ${getPressedTextStyle()}
-      `}>
-                {children}
-            </Text>
+            {/* Render the label using the helper function to apply styling and prevent nesting issues */}
+            {!isLoading && renderButtonLabel(children, size, variant)}
+
         </TouchableOpacity>
     );
 }

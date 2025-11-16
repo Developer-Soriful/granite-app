@@ -1,13 +1,15 @@
+import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    SafeAreaView,
     ScrollView,
+    StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 // Dummy functions - replace with your actual implementations
 const useTrackSignupProgress = (path: string) => {
@@ -71,20 +73,52 @@ export default function GuessPage() {
         }
     };
 
+    const ConstBrainIcon = (props: any) => (
+
+        <Svg
+            width={props.width || 24}
+            height={props.height || 24}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={props.color || "currentColor"}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            {...props}
+        >
+
+            <Path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+            <Path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+            <Path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />
+            <Path d="M17.599 6.5a3 3 0 0 0 .399-1.375" />
+            <Path d="M6.003 5.125A3 3 0 0 0 6.401 6.5" />
+            <Path d="M3.477 10.896a4 4 0 0 1 .585-.396" />
+            <Path d="M19.938 10.5a4 4 0 0 1 .585.396" />
+            <Path d="M6 18a4 4 0 0 1-1.967-.516" />
+            <Path d="M19.967 17.484A4 4 0 0 1 18 18" />
+        </Svg>
+    );
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-gray-50">
+            <View className='px-4 py-6'>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Ionicons name="chevron-back" size={24} color="black" />
+                </TouchableOpacity>
+            </View>
             <ScrollView
                 contentContainerStyle={{ flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View className="flex-1 justify-center px-4 py-8">
-                    <View className="bg-[#F5F5F5] rounded-2xl shadow-lg p-6 space-y-6">
+                <View className="flex-1 px-4 py-8">
+                    <View style={styles.card}>
 
                         {/* Header */}
                         <View className="text-center">
                             <View className="flex justify-center mb-4">
-                                <View className="p-3 bg-[#5C6BC0]/10 rounded-full">
-                                    <Text className="text-2xl">🧠</Text>
+                                <View className="p-3 rounded-full flex justify-center items-center">
+                                    <ConstBrainIcon height={40} width={40} style={{
+                                        borderRadius: "100%"
+                                    }} color="#5c6bc0" backgroundColor="#e5e7ef" />
                                 </View>
                             </View>
                             <Text className="text-2xl font-bold text-[#2E2E2E] mb-2">
@@ -168,7 +202,7 @@ export default function GuessPage() {
                             </TouchableOpacity>
 
                             {!sliderTouched && (
-                                <Text className="mt-2 text-xs text-gray-500">
+                                <Text className="mt-2 text-xs text-gray-500 text-center">
                                     Move the slider to continue
                                 </Text>
                             )}
@@ -177,6 +211,23 @@ export default function GuessPage() {
                     </View>
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }
+
+const styles = StyleSheet.create({
+    card: {
+        width: '100%',
+        backgroundColor: '#F5F5F5',
+        borderRadius: 16,
+        padding: 24,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+})

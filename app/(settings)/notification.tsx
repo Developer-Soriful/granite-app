@@ -39,9 +39,13 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({ isLoading, onPress, childre
         <Button
             mode="contained"
             onPress={onPress}
+            style={{
+                backgroundColor : "#338059",
+                borderRadius : 12
+            }}
             disabled={isLoading}
             loading={isLoading}
-            className="mt-6 bg-blue-600 rounded-lg py-1"
+            className="mt-6 py-1"
             labelStyle={{ fontSize: 16, fontWeight: '600', color: 'white' }}
         >
             {children}
@@ -99,7 +103,7 @@ export default function NotificationSettings({
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1 flex justify-center items-center bg-white "
+            className="flex-1 flex items-center bg-[#e6f5ee] "
         >
             <View className="w-full px-4 py-8 ">
                 <TouchableOpacity onPress={handleNotificationModal} className='mb-10'>
@@ -109,7 +113,7 @@ export default function NotificationSettings({
 
                 {/* Form Content */}
                 <View className="">
-                    <View className="rounded-2xl border border-gray-200 p-6 shadow-sm">
+                    <View className="rounded-[12px] bg-white border border-gray-200 p-6 ">
                         <Text className="mb-4 text-xl font-medium text-gray-900 ">
                             Budget Swing Alerts
                         </Text>
@@ -119,11 +123,11 @@ export default function NotificationSettings({
                             onPress={() => setIsEnabled(prev => !prev)}
                             className="flex-row items-center justify-between"
                         >
-                            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 w-4/5">
+                            <Text className="text-sm font-medium  w-4/5">
                                 Email me if my daily budget changes more than the threshold
                             </Text>
                             <Switch
-                                trackColor={{ false: "#767577", true: "#3b82f6" }} // blue-500
+                                trackColor={{ false: "#767577", true: "#338059" }}
                                 thumbColor={isEnabled ? "#f4f3f4" : "#f4f3f4"}
                                 ios_backgroundColor="#3e3e3e"
                                 onValueChange={setIsEnabled}
@@ -133,7 +137,7 @@ export default function NotificationSettings({
 
                         {/* Threshold Input */}
                         <View className="mt-6">
-                            <Text className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <Text className="block text-sm font-medium ">
                                 Threshold (%)
                             </Text>
                             <TextInput
@@ -142,7 +146,7 @@ export default function NotificationSettings({
                                 onChangeText={setPercentage}
                                 value={percentage}
                                 maxLength={3}
-                                className="mt-1 w-40 rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500"
+                                className="mt-1 w-40 rounded-md border border-gray-300  px-3 py-2 bg-white  text-gray-900  focus:border-blue-500"
                                 placeholder="e.g., 10"
                             />
                             <Text className="mt-2 text-xs text-gray-500 dark:text-gray-400">

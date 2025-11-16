@@ -1,7 +1,7 @@
 import { PlaidLinkProvider } from "@/components/settings/usePlaidLinkContext";
 import { Stack, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { BackHandler, View } from "react-native";
+import { BackHandler, KeyboardAvoidingView, Platform, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import "./global.css";
 
@@ -10,28 +10,31 @@ export default function RootLayout() {
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
+      "hardwareBackPress",
       () => {
         if (router.canGoBack()) {
           router.back();
-          return true; // Prevent default behavior
+          return true;
         }
-
-        // If no history, you can exit app or show confirmation
-        // BackHandler.exitApp();
-        return false; // Let default behavior (exit app) happen
+        return false;
       }
     );
 
     return () => backHandler.remove();
   }, [router]);
+
   return (
     <PlaidLinkProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#fffefe" }}>
-        <View style={{ flex: 1 }}>
-          <Stack screenOptions={{ headerShown: false }} />
-        </View>
-      </SafeAreaView>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#fffefe" }}>
+          <View style={{ flex: 1 }}>
+            <Stack screenOptions={{ headerShown: false }} />
+          </View>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </PlaidLinkProvider>
   );
 }

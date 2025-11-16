@@ -46,7 +46,7 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
     }, [menuVisible]);
 
     const headerBg = isScrolled ? 'bg-transparent' : 'bg-white';
-    const headerText = isScrolled ? 'text-white' : 'text-black';
+    // const headerText = isScrolled ? 'text-white' : 'text-black';
     // this is for handle login and signup
     const handleLogin = () => {
         router.push('/(auth)');
@@ -121,7 +121,7 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
                 {isScrolled && (
                     <View
                         className='absolute inset-0'
-                        style={{ backgroundColor: '#061f12', opacity: 0.8 }}
+                        style={{ backgroundColor: '#d6e6de', opacity: 0.8 }}
                     />
                 )}
 
@@ -130,14 +130,14 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
                 >
                     <TouchableOpacity onPress={handleBackHome} className='flex flex-row items-center gap-2'>
                         <Image source={Images.header_img} />
-                        <Text className={`font-bold text-2xl ${headerText}`}>Granite</Text>
+                        <Text className={`font-bold text-2xl text-black`}>Granite</Text>
                     </TouchableOpacity>
 
                     <Pressable onPress={() => setMenuVisible(true)}>
                         <AntDesign
                             name="align-right"
                             size={24}
-                            color={isScrolled ? '#ffffff' : '#000000'}
+                            color="black"
                         />
                     </Pressable>
                 </View>

@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Alert,
-    SafeAreaView,
     ScrollView,
     Text,
     TextInput,
@@ -136,14 +135,18 @@ export default function DataCollectionPage() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
+        <View className="flex-1">
             <ScrollView
-                contentContainerStyle={{ flexGrow: 1 }}
+                contentContainerStyle={{ flexGrow: 1, backgroundColor: "white" }}
                 showsVerticalScrollIndicator={false}
-                className="py-6"
             >
-                <View className="flex-1 justify-center px-4">
-                    <View className="bg-white rounded-2xl shadow-lg p-6">
+                <View className='px-6 py-6'>
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Ionicons name="chevron-back" size={24} color="black" />
+                    </TouchableOpacity>
+                </View>
+                <View className="flex-1 justify-center px-6 mb-4">
+                    <View className="bg-white rounded-2xl">
 
                         {/* Header */}
                         <View className="text-center mb-6">
@@ -333,6 +336,6 @@ export default function DataCollectionPage() {
                     </View>
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }

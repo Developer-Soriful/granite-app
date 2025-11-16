@@ -69,19 +69,10 @@ export default function Paywall() {
             setLoading(false);
         }
     };
-    // this is for handle back function 
-    const handleBack = () => {
-        // Check if we can go back, if not navigate to home
-        if (router.canGoBack()) {
-            router.back();
-        } else {
-            router.replace('/(tabs)'); // Fallback to home
-        }
-    }
     return (
         <SafeAreaView className="flex-1 bg-white">
             <View className='px-4'>
-                <TouchableOpacity onPress={handleBack}>
+                <TouchableOpacity onPress={() => router.replace('/')}>
                     <Ionicons name="chevron-back" size={24} color="black" />
                 </TouchableOpacity>
             </View>

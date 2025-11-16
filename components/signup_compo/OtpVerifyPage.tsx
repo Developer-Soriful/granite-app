@@ -1,12 +1,12 @@
 import OtpInput from '@/components/OtpInput';
+import { Ionicons } from '@expo/vector-icons';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
-    ScrollView,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import SubmitButton from '../settings/SubmitButton';
 
@@ -111,8 +111,8 @@ export default function OtpVerifyPage() {
 
             if (result?.success) {
                 Alert.alert('Success', 'Verification code sent! Please check your email.');
-            } else if (result?.error) {
-                Alert.alert('Error', result.error);
+            } else if (result?.message) {
+                Alert.alert('Error', result.message);
             }
         } catch (error) {
             console.error('Error resending OTP:', error);
@@ -123,14 +123,13 @@ export default function OtpVerifyPage() {
     };
 
     return (
-        <ScrollView
-            contentContainerStyle={{
-                flexGrow: 1,
-                justifyContent: 'center',
-                backgroundColor: 'white'
-            }}
+        <View
             className="flex-1 bg-white"
-        >
+        >  <View className='px-6 pt-6'>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Ionicons name="chevron-back" size={24} color="black" />
+                </TouchableOpacity>
+            </View>
             <View className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg">
                 <Text className="text-2xl font-bold text-gray-800 text-center mb-4">
                     Check Your Email
@@ -170,7 +169,9 @@ export default function OtpVerifyPage() {
                         disabled={isSubmitting || otp.length !== 6}
                         isLoading={isSubmitting}
                     >
-                        {isSubmitting ? 'Verifying...' : 'Verify & Complete Signup'}
+                        <Text>
+                            {isSubmitting ? 'Verifying...' : 'Verify & Complete Signup'}
+                        </Text>
                     </SubmitButton>
 
                     <View className="flex flex-col gap-4">
@@ -212,6 +213,6 @@ export default function OtpVerifyPage() {
                     (Remember to check your spam folder if you don't see it.)
                 </Text>
             </View>
-        </ScrollView>
+        </View>
     );
 }

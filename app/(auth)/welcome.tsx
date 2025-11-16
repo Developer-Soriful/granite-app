@@ -1,10 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-    ScrollView,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 // Dummy hook - replace with your actual implementation
@@ -24,13 +24,14 @@ export default function WelcomePage() {
     };
 
     return (
-        <ScrollView
-            contentContainerStyle={{
-                flexGrow: 1,
-                backgroundColor: 'white',
-            }}
+        <View
             className="flex-1 bg-white"
         >
+            <View className='px-6 pt-8'>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Ionicons name="chevron-back" size={24} color="black" />
+                </TouchableOpacity>
+            </View>
             <View className="flex-1 items-center justify-center p-4">
                 <View className="max-w-md w-full p-8 bg-whiterounded-lg ">
                     <Text className="text-3xl font-bold text-black text-center mb-4">
@@ -59,6 +60,6 @@ export default function WelcomePage() {
           </Link> */}
                 </View>
             </View>
-        </ScrollView>
+        </View>
     );
 }

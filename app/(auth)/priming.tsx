@@ -1,12 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Alert,
-    SafeAreaView,
     ScrollView,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 const primingQuestions = [
@@ -79,12 +79,17 @@ export default function PrimingPage() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
+        <View className="flex-1">
+            <View className='px-6 py-6'>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Ionicons name="chevron-back" size={24} color="black" />
+                </TouchableOpacity>
+            </View>
             <ScrollView
                 contentContainerStyle={{ flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View className="flex-1 justify-center px-6 py-8">
+                <View className="flex-1 px-6">
 
                     {/* Progress Indicator */}
                     <View className="mb-8">
@@ -157,6 +162,6 @@ export default function PrimingPage() {
 
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }

@@ -225,7 +225,7 @@ export default function SubscriptionComponent({ subscription, config }: Subscrip
     // --- RENDERING (Unchanged, uses NativeWind) ---
 
     return (
-        <View className="flex-1 px-4">
+        <View className="flex-1 px-4 w-full">
             <Text className="text-3xl font-semibold mb-6 text-gray-900">Subscription Settings</Text>
 
             {/* Plan Overview */}
