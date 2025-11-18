@@ -43,7 +43,7 @@ export default function WelcomePage() {
 
                     <TouchableOpacity
                         onPress={handleGetStarted}
-                        className="px-6 py-4 bg-[#66BB6A] rounded-2xl "
+                        className="px-6 py-4 bg-[#338059] rounded-2xl "
                     >
                         <Text className="text-white font-semibold text-center text-base">
                             Get Started

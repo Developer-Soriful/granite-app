@@ -169,7 +169,7 @@ export default function OtpVerifyPage() {
                         disabled={isSubmitting || otp.length !== 6}
                         isLoading={isSubmitting}
                     >
-                        <Text>
+                        <Text className='text-white'>
                             {isSubmitting ? 'Verifying...' : 'Verify & Complete Signup'}
                         </Text>
                     </SubmitButton>

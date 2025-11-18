@@ -136,7 +136,7 @@ export default function SubscriptionScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f8f8',
+        backgroundColor: '#e6f5ee',
     },
     loadingText: {
         marginTop: 10,

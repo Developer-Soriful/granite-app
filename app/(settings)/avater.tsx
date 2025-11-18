@@ -121,7 +121,7 @@ export default function AvatarUploadScreen() {
 
     return (
         <View
-            className="flex-1 items-start p-4" // Tailwind for container style
+            className="flex-1 items-start p-4 bg-[#e6f5ee]"
         >
             <View className='py-6'>
                 <TouchableOpacity onPress={() => router.back()}>
@@ -130,7 +130,7 @@ export default function AvatarUploadScreen() {
             </View>
             <View className='w-full flex flex-col justify-center items-center'>
                 <Text
-                    className="text-3xl font-bold text-gray-800 my-5 mt-10" // Tailwind for header style
+                    className="text-3xl font-bold text-gray-800 my-5 mt-10"
                 >
                     Update Profile Picture
                 </Text>
