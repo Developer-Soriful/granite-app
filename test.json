@@ -1,0 +1,1046 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Granite External API",
+        "version": "0.1.0",
+        "license": {
+            "name": "Proprietary",
+            "url": "https://www.granitefinance.io/terms"
+        },
+        "description": "Contract for the Granite app's external HTTP surfaces, including Plaid/Stripe webhooks,\nauthenticated routes, and cron-style admin jobs. The spec mirrors the handlers implemented\nunder `src/app/**/route.ts`.\n"
+    },
+    "servers": [
+        {
+            "url": "https://www.granitefinance.io",
+            "description": "Production (NEXT_PUBLIC_APP_URL)"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Authentication and user session handling."
+        },
+        {
+            "name": "User Lifecycle",
+            "description": "User account creation and deletion requests."
+        },
+        {
+            "name": "Stripe Billing",
+            "description": "Subscription management and payment previews."
+        },
+        {
+            "name": "Stripe Webhook",
+            "description": "Receiving and processing events from Stripe."
+        },
+        {
+            "name": "Plaid Connectivity",
+            "description": "Linking, updating, and removing Plaid financial items."
+        },
+        {
+            "name": "Plaid Webhook",
+            "description": "Receiving and processing Item and Transaction updates from Plaid."
+        },
+        {
+            "name": "Sandbox",
+            "description": "Developer utility endpoints for testing."
+        },
+        {
+            "name": "Admin Jobs",
+            "description": "Cron-triggered endpoints for user retention and cleanup."
+        }
+    ],
+    "paths": {
+        "/auth/callback": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Supabase OAuth callback",
+                "security": [],
+                "description": "Exchanges a Supabase OAuth `code` for a session, initializes onboarding metadata for new users, and redirects to `/welcome`, `/dashboard`, or the `next` param. Errors redirect back to `/login` with a `message` query string.\n",
+                "operationId": "supabaseAuthCallback",
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "description": "One-time Supabase OAuth authorization code.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "next",
+                        "in": "query",
+                        "description": "Optional relative path to redirect after login.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK (Success is a 302 Redirect)"
+                    },
+                    "302": {
+                        "description": "Browser redirect to the next step in the onboarding flow."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/user/request-deletion": {
+            "post": {
+                "tags": [
+                    "User Lifecycle"
+                ],
+                "summary": "Schedule user deletion",
+                "description": "Cancels any active Stripe subscriptions tied to the authenticated Supabase user and inserts a row in `user_deletion_requests`. Returns a standard message indicating the 30-day retention period.\n",
+                "operationId": "scheduleUserDeletion",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion scheduled.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/stripe/create-session": {
+            "post": {
+                "tags": [
+                    "Stripe Billing"
+                ],
+                "summary": "Create Checkout subscription session",
+                "description": "Creates a Stripe Checkout session for monthly or annual plans. Uses Supabase auth cookies to detect the user and stores/reuses their customer ID in Stripe. Trial periods are currently 3 days (monthly) or 7 days (annual).\n",
+                "operationId": "createStripeCheckoutSession",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "priceId",
+                                    "planType"
+                                ],
+                                "properties": {
+                                    "priceId": {
+                                        "type": "string"
+                                    },
+                                    "planType": {
+                                        "type": "string",
+                                        "enum": [
+                                            "monthly",
+                                            "annual"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Checkout session created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "sessionId": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/stripe/preview-proration": {
+            "post": {
+                "tags": [
+                    "Stripe Billing"
+                ],
+                "summary": "Preview subscription proration",
+                "description": "Fetches the authenticated user's latest active subscription from Supabase and calls `stripe.invoices.createPreview` to show the proration delta for the provided price.\n",
+                "operationId": "previewStripeProration",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "newPriceId"
+                                ],
+                                "properties": {
+                                    "newPriceId": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Preview delta returned (amounts in cents).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "amount": {
+                                            "type": "integer",
+                                            "description": "Signed proration delta in cents."
+                                        },
+                                        "formatted": {
+                                            "type": "string"
+                                        },
+                                        "currency": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/stripe/cancel-subscription": {
+            "post": {
+                "tags": [
+                    "Stripe Billing"
+                ],
+                "summary": "Cancel or schedule cancellation",
+                "description": "Cancels a subscription immediately (`mode=now`), schedules cancellation at period end, or schedules a sandbox test cancellation using `testCancelInMins`. Updates the related Supabase `subscriptions` row with the latest lifecycle timestamps.\n",
+                "operationId": "cancelStripeSubscription",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "subscriptionId"
+                                ],
+                                "properties": {
+                                    "subscriptionId": {
+                                        "type": "string"
+                                    },
+                                    "testCancelInMins": {
+                                        "type": "integer"
+                                    },
+                                    "mode": {
+                                        "type": "string",
+                                        "enum": [
+                                            "period_end",
+                                            "now"
+                                        ],
+                                        "default": "period_end"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cancellation acknowledged.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "subscription": {
+                                            "$ref": "#/components/schemas/StripeSubscriptionSummary"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/stripe/reactivate-subscription": {
+            "post": {
+                "tags": [
+                    "Stripe Billing"
+                ],
+                "summary": "Reactivate scheduled cancellations",
+                "description": "Removes `cancel_at` or `cancel_at_period_end` on a Stripe subscription, syncs the record back to Supabase, and optionally emails the customer if the Stripe customer has an email on file.\n",
+                "operationId": "reactivateStripeSubscription",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "subscriptionId"
+                                ],
+                                "properties": {
+                                    "subscriptionId": {
+                                        "type": "string"
+                                    },
+                                    "dryRun": {
+                                        "type": "boolean",
+                                        "default": false
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reactivation completed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "emailed": {
+                                            "type": "boolean"
+                                        },
+                                        "subscription": {
+                                            "$ref": "#/components/schemas/StripeSubscriptionSummary"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/stripe/delete-subscription": {
+            "post": {
+                "tags": [
+                    "Stripe Billing"
+                ],
+                "summary": "Delete expired subscription records",
+                "description": "Authenticated users can permanently delete their own Supabase `subscriptions` row after the `current_period_end` has passed. Also attempts to ensure the Stripe subscription is canceled.\n",
+                "operationId": "deleteExpiredStripeSubscription",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "subscriptionId"
+                                ],
+                                "properties": {
+                                    "subscriptionId": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Subscription removed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/stripe/webhook": {
+            "post": {
+                "tags": [
+                    "Stripe Webhook"
+                ],
+                "summary": "Stripe webhook receiver",
+                "description": "Handles `checkout.session.completed`, `invoice.*`, and `customer.subscription.*` events. Updates Supabase `subscriptions` and adjusts payment intent descriptors. Requires the `stripe-signature` header.\n",
+                "operationId": "receiveStripeWebhook",
+                "security": [
+                    {
+                        "stripeWebhookSignature": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "description": "Stripe event payload (varies by `type`)."
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Webhook processed."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/plaid/link-token": {
+            "get": {
+                "tags": [
+                    "Plaid Connectivity"
+                ],
+                "summary": "Create Link token",
+                "description": "Issues a Plaid Link token for the authenticated user (`Transactions` product), persists it in Supabase user metadata, and returns it to the caller. Configured for US + CA with checking and credit-card subtypes.\n",
+                "operationId": "createPlaidLinkToken",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Link token returned.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "link_token": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/plaid/update-link-token": {
+            "get": {
+                "tags": [
+                    "Plaid Connectivity"
+                ],
+                "summary": "Create Link token (update mode)",
+                "description": "Generates a Link token tied to an existing item so users can fix logins or pick new accounts. Requires the encrypted access token stored in `user_plaid_items`.\n",
+                "operationId": "createPlaidUpdateLinkToken",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "item_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reason",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "new_accounts"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Link token returned.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "link_token": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/plaid/sync": {
+            "post": {
+                "tags": [
+                    "Plaid Connectivity"
+                ],
+                "summary": "Exchange public token & kick off sync",
+                "description": "Exchanges a Plaid `public_token` for an `access_token`, stores the encrypted token in `user_plaid_items`, and runs `PlaidTransactionOperations` to import transactions. Clears any cached Link tokens from user metadata.\n",
+                "operationId": "exchangePlaidPublicToken",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "public_token"
+                                ],
+                                "properties": {
+                                    "public_token": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sync started.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "item_id": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/plaid/remove-item": {
+            "post": {
+                "tags": [
+                    "Plaid Connectivity"
+                ],
+                "summary": "Remove Plaid item",
+                "description": "Removes the specified Plaid item after decrypting its access token from Supabase, invokes `itemRemove`, and deletes the Supabase row.\n",
+                "operationId": "removePlaidItem",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "item_id"
+                                ],
+                                "properties": {
+                                    "item_id": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Item removed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/plaid/webhook": {
+            "post": {
+                "tags": [
+                    "Plaid Webhook"
+                ],
+                "summary": "Plaid webhook receiver",
+                "description": "Accepts ITEM and TRANSACTIONS webhooks, verifies the `plaid-verification` header, and dispatches to the appropriate handler to update Supabase (`user_plaid_items`, transactions pipeline).\n",
+                "operationId": "receivePlaidWebhook",
+                "security": [
+                    {
+                        "plaidVerification": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "description": "Plaid webhook payload."
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Webhook acknowledged."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/sandbox/fire-webhook": {
+            "post": {
+                "tags": [
+                    "Sandbox"
+                ],
+                "summary": "Trigger Plaid sandbox webhook",
+                "description": "Developer-only helper that calls Plaid's `/sandbox/item/fire_webhook` endpoint for a stored item in Supabase. Requires an authenticated user session.\n",
+                "operationId": "firePlaidSandboxWebhook",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "item_id",
+                                    "webhook_code"
+                                ],
+                                "properties": {
+                                    "item_id": {
+                                        "type": "string"
+                                    },
+                                    "webhook_code": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Plaid acknowledged the request.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "plaid_response": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/StandardError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/admin/auto-offboard": {
+            "get": {
+                "tags": [
+                    "Admin Jobs"
+                ],
+                "summary": "Queue inactive users for deletion",
+                "description": "Cron-triggered endpoint guarded by `CRON_SECRET`. Lists Supabase users older than 30 days with no active subscriptions and enqueues them into `user_deletion_requests`.\n",
+                "operationId": "queueInactiveUsersForDeletion",
+                "security": [
+                    {
+                        "cronSecret": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Users enqueued.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "queued_count": {
+                                            "type": "integer"
+                                        },
+                                        "queued_user_ids": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        },
+        "/api/admin/data-retention-worker": {
+            "get": {
+                "tags": [
+                    "Admin Jobs"
+                ],
+                "summary": "Delete users past retention window",
+                "description": "Cron-triggered worker guarded by `CRON_SECRET`. Deletes users whose `user_deletion_requests` entry is older than 30 days and cleans up the queue row.\n",
+                "operationId": "deleteUsersPastRetentionWindow",
+                "security": [
+                    {
+                        "cronSecret": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cleanup completed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "deleted_count": {
+                                            "type": "integer"
+                                        },
+                                        "deleted_users": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "failed_count": {
+                                            "type": "integer"
+                                        },
+                                        "failures": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "user_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "error": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/StandardError"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "cookieAuth": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "sb-access-token",
+                "description": "Supabase session cookie issued by `@supabase/auth-helpers-nextjs`."
+            },
+            "stripeWebhookSignature": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "stripe-signature",
+                "description": "Raw Stripe webhook signature header."
+            },
+            "plaidVerification": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "plaid-verification",
+                "description": "Header provided by Plaid to verify webhook authenticity."
+            },
+            "cronSecret": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "CRON_SECRET"
+            }
+        },
+        "schemas": {
+            "StripeSubscriptionSummary": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "cancel_at_period_end": {
+                        "type": "boolean"
+                    },
+                    "cancel_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "canceled_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "current_period_end": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                }
+            },
+            "ErrorResponse": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "string"
+                    },
+                    "details": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            }
+        },
+        "responses": {
+            "Unauthorized": {
+                "description": "Authentication failed or missing credentials.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "StandardError": {
+                "description": "Request failed.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

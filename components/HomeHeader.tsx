@@ -11,11 +11,13 @@ import {
     Modal,
     Pressable,
     ScrollView as RNScrollView,
+    StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+// IMPORT useSafeAreaInsets for dynamic padding
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface HomeHeaderProps {
     isScrolled?: boolean;
@@ -28,6 +30,9 @@ const { width, height } = Dimensions.get('window');
 const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps) => {
     const [menuVisible, setMenuVisible] = useState(false);
     const slideAnim = useRef(new Animated.Value(width)).current;
+
+    // 🔑 FIX: Get the safe area insets dynamically
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         if (menuVisible) {
@@ -46,77 +51,59 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
     }, [menuVisible]);
 
     const headerBg = isScrolled ? 'bg-transparent' : 'bg-white';
-    // const headerText = isScrolled ? 'text-white' : 'text-black';
-    // this is for handle login and signup
+
     const handleLogin = () => {
+        setMenuVisible(false);
         router.push('/(auth)');
     };
     const handleSignup = () => {
+        setMenuVisible(false);
         router.push('/(auth)/signup');
     };
-    // this is for navigate on section to section 
+
+    // (scrollTo function remains unchanged, omitted for brevity)
     const scrollTo = (section: keyof SectionRefs) => {
         const sectionRef = sections[section];
         const scrollNode = scrollRef.current;
 
         if (!sectionRef?.current || !scrollNode) return;
 
-        // Close the menu first
         setMenuVisible(false);
 
-        // Small delay to allow menu to close before scrolling
         setTimeout(() => {
             try {
-                // First try measureInWindow as it's more reliable
-                sectionRef.current.measureInWindow((x, y, width, height) => {
-                    if (y !== undefined && y !== null) {
-                        // Calculate the target position with some offset
-                        const targetY = Math.max(0, y - 100);
+                const scrollNodeHandle = findNodeHandle(scrollNode as any);
+                if (!scrollNodeHandle) return;
 
-                        // Use a more controlled animation
+                sectionRef.current.measureLayout(
+                    scrollNodeHandle,
+                    (layoutX, layoutY) => {
+                        const targetY = Math.max(0, layoutY - 100);
+
                         requestAnimationFrame(() => {
                             scrollNode.scrollTo({
                                 y: targetY,
                                 animated: true,
-                                duration: 500,
                             });
                         });
-                        return;
+                    },
+                    () => {
+                        console.error('Error measuring layout');
                     }
-
-                    // Fallback to measureLayout if measureInWindow doesn't work
-                    const scrollNodeHandle = findNodeHandle(scrollNode as any);
-                    if (!scrollNodeHandle) return;
-
-                    sectionRef.current.measureLayout(
-                        scrollNodeHandle,
-                        (x, y) => {
-                            const targetY = Math.max(0, y - 100);
-                            requestAnimationFrame(() => {
-                                scrollNode.scrollTo({
-                                    y: targetY,
-                                    animated: true,
-                                    duration: 500, // Longer duration for smoother scroll
-                                });
-                            });
-                        },
-                        () => {
-                            console.error('Error measuring layout');
-                        }
-                    );
-                });
+                );
             } catch (error) {
                 console.error('Error in scrollTo:', error);
             }
         }, 150);
     };
 
-    // this is for handle back home 
     const handleBackHome = () => {
         router.push("/")
     }
+
     return (
         <>
+            {/* --- Main Header Content --- */}
             <View className='relative overflow-hidden'>
                 {isScrolled && (
                     <View
@@ -124,7 +111,6 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
                         style={{ backgroundColor: '#d6e6de', opacity: 0.8 }}
                     />
                 )}
-
                 <View
                     className={`flex flex-row justify-between items-center px-4 py-4 ${headerBg}`}
                 >
@@ -132,7 +118,6 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
                         <Image source={Images.header_img} />
                         <Text className={`font-bold text-2xl text-black`}>Granite</Text>
                     </TouchableOpacity>
-
                     <Pressable onPress={() => setMenuVisible(true)}>
                         <AntDesign
                             name="align-right"
@@ -142,39 +127,37 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
                     </Pressable>
                 </View>
             </View>
-
+            {/* --------------------- Modal Menu --------------------- */}
             <Modal
                 transparent
                 visible={menuVisible}
                 animationType="none"
                 onRequestClose={() => setMenuVisible(false)}
             >
-                <SafeAreaView style={{ flex: 1 }}>
+                <View style={styles.modalOverlay}>
+                    {/* Background/Backdrop */}
                     <Pressable
-                        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
+                        style={styles.backdrop}
                         onPress={() => setMenuVisible(false)}
                     />
+
                     <Animated.View
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: width,
-                            height: height,
-                            transform: [{ translateX: slideAnim }],
-                        }}
+                        style={[
+                            styles.animatedContainer,
+                            { transform: [{ translateX: slideAnim }] },
+                        ]}
                     >
-                        {/* Original modal content 그대로 রাখা */}
-                        <View
+                        {/* The content is inside SafeAreaView to handle top and bottom insets */}
+                        <SafeAreaView
                             className='bg-white relative flex flex-col justify-between'
-                            style={{ height: height, width: width }}
+                            style={styles.menuContent}
                         >
+                            {/* Top Section (Logo/Close/Links) */}
                             <View>
                                 <View className='flex flex-row justify-between items-center px-5 py-4 border-b border-gray-200'>
                                     <View className='flex flex-row items-center gap-2'>
                                         <Image
                                             source={Images.header_img}
-                                            className='w-7 h-7'
                                             resizeMode='contain'
                                         />
                                         <Text className='font-bold text-2xl text-black'>
@@ -201,19 +184,18 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
                                 </View>
                             </View>
 
-                            <View className='mt-6 flex flex-col gap-4 mb-16 px-3'>
+                            {/* Bottom Section (Login/Signup Buttons)
+                                🔑 FIX: Applying the safe area bottom inset directly to the style
+                                using the 'insets.bottom' value. We also add a small margin (16)
+                                for visual spacing above the inset.
+                            */}
+                            <View
+                                className=' flex flex-col gap-4 px-3'
+                                style={{ paddingBottom: insets.bottom + 32 }} // <-- DYNAMIC PADDING FIX
+                            >
                                 <TouchableOpacity
                                     onPress={handleLogin}
-                                    style={{
-                                        width: '100%',
-                                        borderRadius: 16,
-                                        borderColor: '#33805933',
-                                        borderWidth: 1,
-                                        paddingLeft: 24,
-                                        paddingRight: 24,
-                                        paddingTop: 12,
-                                        paddingBottom: 12,
-                                    }}
+                                    style={styles.loginButton}
                                 >
                                     <Text className='text-sm text-[#338059] font-semibold text-center'>
                                         Log In
@@ -221,29 +203,60 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={handleSignup}
-                                    style={{
-                                        width: '100%',
-                                        borderRadius: 16,
-                                        backgroundColor: '#338059',
-                                        borderColor: '#33805933',
-                                        borderWidth: 1,
-                                        paddingLeft: 24,
-                                        paddingRight: 24,
-                                        paddingTop: 12,
-                                        paddingBottom: 12,
-                                    }}
+                                    style={styles.signupButton}
                                 >
                                     <Text className='text-sm text-[#fff] font-semibold text-center'>
                                         Sign Up
                                     </Text>
                                 </TouchableOpacity>
                             </View>
-                        </View>
+                        </SafeAreaView>
                     </Animated.View>
-                </SafeAreaView>
+                </View>
             </Modal>
         </>
     );
 };
 
 export default HomeHeader;
+
+const styles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        height: "100%"
+    },
+    backdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    animatedContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: width,
+        height: height,
+    },
+    menuContent: {
+        flex: 1,
+        // Since we are applying bottom inset dynamically to the button container,
+        // we ensure SafeAreaView takes full flex 1 space.
+    },
+    // Moved button styles here for cleanliness (optional, but good practice)
+    loginButton: {
+        width: '100%',
+        borderRadius: 16,
+        borderColor: '#33805933',
+        borderWidth: 1,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+    },
+    signupButton: {
+        width: '100%',
+        borderRadius: 16,
+        backgroundColor: '#338059',
+        borderColor: '#33805933',
+        borderWidth: 1,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+    }
+});

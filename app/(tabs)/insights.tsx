@@ -8,11 +8,10 @@ import SpendingChart from "@/components/SpendingChart";
 import TopExpensesList from "@/components/TopExpensesList";
 import { Ionicons } from "@expo/vector-icons";
 import { Image, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const Insights = () => {
   return (
-    <SafeAreaView
+    <View
       style={{ flex: 1, backgroundColor: "#e6f5ee", paddingTop: 8 }}
     >
       <View
@@ -20,7 +19,7 @@ const Insights = () => {
         style={{
           position: "absolute",
           backgroundColor: "#e6f5ee",
-          top: 16,
+          paddingTop: 16,
           left: 0,
           right: 0,
           zIndex: 9,
@@ -35,7 +34,7 @@ const Insights = () => {
           flexGrow: 1,
           paddingHorizontal: 16,
           display: "flex",
-          paddingTop: 45,
+          paddingTop: 80,
           gap: 16,
         }}
         showsVerticalScrollIndicator={false}
@@ -74,7 +73,7 @@ const Insights = () => {
         </View>
 
         {/* this is for Projected End-of-Month Balance */}
-        <View className="bg-white rounded-[16px] p-4 w-full flex flex-col gap-4">
+        <View className="bg-white rounded-[16px] mb-4 p-4 w-full flex flex-col gap-4">
           <View className="flex flex-col gap-2">
             <Text className="text-xl font-semibold">
               Projected End-of-Month Balance
@@ -93,7 +92,7 @@ const Insights = () => {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

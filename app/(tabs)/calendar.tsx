@@ -2,11 +2,10 @@ import CalenderSection from "@/components/CalenderSection";
 import Header from "@/components/Header";
 import React from "react";
 import { ScrollView, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const Calendar = () => {
   return (
-    <SafeAreaView
+    <View
       style={{ flex: 1, backgroundColor: "#e6f5ee", paddingTop: 8 }}
     >
       <View
@@ -14,7 +13,7 @@ const Calendar = () => {
         style={{
           position: "absolute",
           backgroundColor: "#e6f5ee",
-          top: 16,
+          paddingTop: 16,
           left: 0,
           right: 0,
           zIndex: 9,
@@ -28,7 +27,7 @@ const Calendar = () => {
         contentContainerStyle={{
           flexGrow: 1,
           padding: 16,
-          paddingTop: 45,
+          paddingTop: 80,
           gap: 16,
         }}
         showsVerticalScrollIndicator={false}
@@ -36,7 +35,7 @@ const Calendar = () => {
         {/* this is for calender section here */}
         <CalenderSection />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -5,17 +5,17 @@ import SpendingInsights from "@/components/SpendingInsights";
 import SpendMoney from "@/components/SpendMoney";
 import TransactionsOverview from "@/components/TransactionsOverview";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 function Dashboard() {
+
   return (
-    <SafeAreaView style={styles.dailyBudgetContainer}>
+    <View style={styles.dailyBudgetContainer}>
       <View
         className="rounded-bl-[16px] rounded-br-[16px]"
         style={{
           position: "absolute",
           backgroundColor: "#e6f5ee",
-          top: 16,
+          paddingTop: 16,
           left: 0,
           right: 0,
           zIndex: 9,
@@ -23,6 +23,8 @@ function Dashboard() {
           marginRight: 16,
         }}
       >
+        {/* If the Header component accepts a user prop, you can pass the name/email: */}
+        {/* <Header userEmail={session?.user?.email} /> */}
         <Header />
       </View>
       <ScrollView
@@ -30,7 +32,7 @@ function Dashboard() {
           flexGrow: 1,
           padding: 16,
           display: "flex",
-          paddingTop: 45,
+          paddingTop: 80,
           gap: 16,
         }}
         showsVerticalScrollIndicator={false}
@@ -45,6 +47,7 @@ function Dashboard() {
             borderRadius: 16,
           }}
         >
+          {/* Placeholder data needs to be replaced with real financial data from Plaid */}
           <ForecastFuture currentAvg={50.25} numberOfDays={30} maxValue={200} />
         </View>
         {/* this is for Spending Insights */}
@@ -60,7 +63,7 @@ function Dashboard() {
           <RecentTransactionsHistory />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 export default Dashboard
@@ -71,6 +74,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     fontFamily: "Instrument Sans",
   },
+  // ... (rest of your styles are omitted for brevity, they remain unchanged)
   card: {
     backgroundColor: "#fefffe",
     borderRadius: 16,
@@ -80,6 +84,7 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 16,
   },
+  // ... (rest of the styles)
   barsContainer: {
     flexDirection: "column",
     gap: 6,

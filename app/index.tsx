@@ -1,17 +1,18 @@
-import { Images } from '@/assets'
-import AnimatedDigit from '@/components/AnimatedDigit'
-import Contact from '@/components/Contact'
-import FAQ from '@/components/FAQ'
-import Features from '@/components/Features'
-import HomeHeader from '@/components/HomeHeader'
-import HowItWork from '@/components/HowItWork'
-import Testimonial from '@/components/Testimonial'
-import { SectionRefs } from '@/types/navigation'
-import Button from '@/ui/Button'
-import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
-import { StatusBar } from "expo-status-bar"
-import React, { LegacyRef, useEffect, useRef, useState } from 'react'
+
+import { Images } from '@/assets';
+import AnimatedDigit from '@/components/AnimatedDigit';
+import Contact from '@/components/Contact';
+import FAQ from '@/components/FAQ';
+import Features from '@/components/Features';
+import HomeHeader from '@/components/HomeHeader';
+import HowItWork from '@/components/HowItWork';
+import Testimonial from '@/components/Testimonial';
+import { SectionRefs } from '@/types/navigation';
+import Button from '@/ui/Button';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { StatusBar } from "expo-status-bar";
+import React, { LegacyRef, useEffect, useRef, useState } from 'react';
 import {
     Image,
     ImageBackground,
@@ -22,8 +23,9 @@ import {
     Text,
     TouchableOpacity,
     View,
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import 'react-native-url-polyfill/auto';
 
 const HomePage = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -73,7 +75,9 @@ const HomePage = () => {
     return (
         <>
             <StatusBar style="dark" />
-            <SafeAreaView style={styles.dailyBudgetContainer}>
+            <SafeAreaView
+                style={styles.dailyBudgetContainer}
+            >
 
                 <View className="absolute top-0 left-0 right-0 z-10">
                     <HomeHeader
@@ -129,22 +133,20 @@ const HomePage = () => {
                                                 borderWidth: 1
                                             }}>This Month</Text>
                                         </View>
-                                        <View className='w-full rounded-[16px] flex flex-col justify-center items-center gap-1' style={{
+                                        <View className='w-full rounded-[16px] flex flex-col justify-center items-center gap-1 w-full' style={{
                                             backgroundColor: "#e9f2ee",
                                             borderColor: "#8fc0a91a",
                                             borderWidth: 1,
-                                            padding: 20
+                                            padding: 20,
                                         }}>
                                             <Text
                                                 style={{
-                                                    // Corrected syntax: color, fontSize, fontWeight, camelCase, comma separation
                                                     color: '#3d424d',
                                                     fontSize: 12,
-                                                    fontWeight: '500', // Use string for '500' or 'bold'
+                                                    fontWeight: '500',
                                                     letterSpacing: 1.8,
                                                     lineHeight: 16,
-                                                    margin: 0, // 'margin: 0 0 8' is invalid. Use margin for all sides or specific properties.
-                                                    marginBottom: 8, // Use marginBottom for the 8 unit bottom margin
+                                                    marginBottom: 8,
                                                     textAlign: 'center',
                                                     textTransform: 'uppercase',
                                                 }}
@@ -302,6 +304,9 @@ const HomePage = () => {
                             <View>
                                 <Contact />
                             </View>
+                            {/* ADDED A SMALL MARGIN/PADDING AT THE VERY BOTTOM OF THE SCROLLVIEW CONTENT */}
+                            {/* This ensures the very last item isn't immediately cut off by the screen edge */}
+                            <View style={{ height: 20 }} />
                         </View>
                     </View >
                 </ScrollView >
@@ -314,8 +319,7 @@ export default HomePage
 const styles = StyleSheet.create({
     dailyBudgetContainer: {
         flex: 1,
-        backgroundColor: "#e6f5ee",
-        paddingTop: 8,
+        backgroundColor: "#fff",
         fontFamily: "Instrument Sans",
     },
     section: {
@@ -330,6 +334,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderTopLeftRadius: 55,
         borderBottomRightRadius: 55,
+        paddingLeft: 16,
+        paddingRight: 16
     },
     text: {
         color: 'white',

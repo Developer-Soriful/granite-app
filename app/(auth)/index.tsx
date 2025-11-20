@@ -11,6 +11,8 @@ import {
   View
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
+// 1. Import real authentication functions
+import { signIn, signInWithOAuth } from '../../hooks/useAuthActions';
 
 // Google Icon Component
 const GoogleIcon = () => (
@@ -46,7 +48,7 @@ interface Props {
   secureTextEntry?: boolean;
   value: string;
   onChangeText: (text: string) => void;
-  keyboardType?: string;
+  keyboardType?: 'default' | 'email-address' | 'numeric';
 }
 // Custom Input Component
 const Input = ({
@@ -68,8 +70,14 @@ const Input = ({
   />
 );
 
+interface SubmitButtonProps {
+  onPress: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+}
+
 // Submit Button Component
-const SubmitButton = ({ onPress, children, disabled = false }) => (
+const SubmitButton = ({ onPress, children, disabled = false }: SubmitButtonProps) => (
   <TouchableOpacity
     className={`bg-[#338059] py-[6px] rounded-[16px] ${disabled ? "opacity-50" : ""}`}
     onPress={onPress}
@@ -81,20 +89,6 @@ const SubmitButton = ({ onPress, children, disabled = false }) => (
   </TouchableOpacity>
 );
 
-const emailLogin = async (email: string, password: string) => {
-  console.log("Email Login:", email, password);
-  return { success: true, message: "Logged in successfully" };
-};
-
-const signInWithGoogle = async () => {
-  console.log("Google Sign In");
-  return { success: true, message: "Google login successful" };
-};
-
-const signInWithApple = async () => {
-  console.log("Apple Sign In");
-  return { success: true, message: "Apple login successful" };
-};
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -103,6 +97,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  // 3. INTEGRATE REAL EMAIL LOGIN FUNCTION
   const handleEmailLogin = async () => {
     if (!email || !password) {
       setMessage("Please fill in all fields");
@@ -113,48 +108,52 @@ export default function LoginScreen() {
     setMessage("");
 
     try {
-      const result = await emailLogin(email, password);
-      setMessage(result.message);
-
-      if (result.success) {
-        // Successfully logged in, navigate to home
-        router.replace("/(tabs)");
-      }
-    } catch (error) {
-      setMessage("Login failed. Please try again.");
+      await signIn(email, password);
+      // If successful, the user is logged in. 
+      // Navigation should ideally be handled by the Auth Listener, 
+      // but for immediate feedback on email/password, we navigate here.
+      setMessage("Login successful!");
+      router.replace("/(tabs)");
+    } catch (error: any) {
+      // Error is caught from the 'signIn' function
+      setMessage(error.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  // 4. INTEGRATE REAL GOOGLE LOGIN (OAuth) FUNCTION
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setMessage("");
     try {
-      const result = await signInWithGoogle();
-      setMessage(result.message);
-
-      if (result.success) {
-        router.replace("/(tabs)");
-      }
-    } catch (error) {
-      setMessage("Google login failed.");
+      await signInWithOAuth('google');
+      // OAuth success opens the browser. 
+      // The success message and navigation (router.replace) 
+      // MUST happen in the useSupabaseAuthListener when the user returns.
+      // We set the message here only for feedback if the browser fails to open.
+      setMessage("Redirecting to Google...");
+    } catch (error: any) {
+      setMessage(error.message || "Google login failed.");
     } finally {
+      // Do NOT set loading to false immediately, as the browser is opening.
+      // Instead, reset it if an immediate error occurs.
       setLoading(false);
     }
   };
 
+  // 5. INTEGRATE REAL APPLE LOGIN (OAuth) FUNCTION
   const handleAppleLogin = async () => {
     setLoading(true);
+    setMessage("");
     try {
-      const result = await signInWithApple();
-      setMessage(result.message);
-
-      if (result.success) {
-        router.replace("/(tabs)");
-      }
-    } catch (error) {
-      setMessage("Apple login failed.");
+      await signInWithOAuth('apple');
+      // OAuth success opens the browser. Navigation must be handled by the Auth Listener.
+      setMessage("Redirecting to Apple...");
+    } catch (error: any) {
+      setMessage(error.message || "Apple login failed.");
     } finally {
+      // Do NOT set loading to false immediately.
       setLoading(false);
     }
   };
@@ -165,10 +164,11 @@ export default function LoginScreen() {
       message.toLowerCase().includes("could not") ||
       message.toLowerCase().includes("invalid") ||
       message.toLowerCase().includes("failed") ||
-      message.toLowerCase().includes("does not meet"));
+      message.toLowerCase().includes("does not meet") ||
+      message.toLowerCase().includes("user not found")); // Added common auth error
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 bg-white">
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1 bg-white">
       <HomeHeader />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
@@ -242,6 +242,7 @@ export default function LoginScreen() {
                 secureTextEntry={true}
                 value={password}
                 onChangeText={setPassword}
+                keyboardType="default"
               />
               <View className="flex-row justify-end mt-1">
                 <Link href="/(auth)/forget-password" asChild>

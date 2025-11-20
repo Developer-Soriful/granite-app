@@ -40,8 +40,8 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({ isLoading, onPress, childre
             mode="contained"
             onPress={onPress}
             style={{
-                backgroundColor : "#338059",
-                borderRadius : 12
+                backgroundColor: "#338059",
+                borderRadius: 12
             }}
             disabled={isLoading}
             loading={isLoading}
@@ -102,7 +102,7 @@ export default function NotificationSettings({
     }
     return (
         <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             className="flex-1 flex items-center bg-[#e6f5ee] "
         >
             <View className="w-full px-4 py-8 ">

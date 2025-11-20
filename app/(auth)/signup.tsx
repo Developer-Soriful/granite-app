@@ -6,9 +6,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
+// REAL Supabase Auth Imports
+import { signInWithOAuth, signUp } from '../../hooks/useAuthActions';
+
+// --- ICON COMPONENTS ---
 
 // Google Icon Component
 const GoogleIcon = () => (
@@ -41,14 +45,7 @@ const AppleIcon = () => (
 
 // Check Icon Component
 const CheckIcon = () => (
-  <Svg
-    width={16}
-    height={16}
-    fill="none"
-    color={"#d1d5dc"}
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
+  <Svg width={16} height={16} fill="none" color={"#d1d5dc"} stroke="currentColor" viewBox="0 0 24 24">
     <Path
       color={"#d1d5dc"}
       strokeLinecap="round"
@@ -81,29 +78,14 @@ const CrossIcon = () => (
 // Requirement Item Component
 const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
   <View className="flex-row items-center space-x-2">
-    <View className={`${met ? "text-green-500" : "text-gray-300"}`}>
-      {met ? <CheckIcon /> : <CrossIcon />}
-    </View>
+    <View>{met ? <CheckIcon /> : <CrossIcon />}</View>
     <Text className={`text-xs ${met ? "text-[#00a63e]" : "text-[#6a7282]"}`}>
       {text}
     </Text>
   </View>
 );
 
-const signupWithOtp = async (email: string, password: string) => {
-  console.log("Signup with OTP:", email, password);
-  return { success: true, redirectTo: "/(auth)/verify" };
-};
-
-const signInWithGoogle = async () => {
-  console.log("Google Sign In");
-  return { success: true, message: "Google signup successful" };
-};
-
-const signInWithApple = async () => {
-  console.log("Apple Sign In");
-  return { success: true, message: "Apple signup successful" };
-};
+// --- MAIN COMPONENT ---
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -115,16 +97,8 @@ export default function SignupScreen() {
   const isError =
     message &&
     (message.toLowerCase().includes("error") ||
-      message.toLowerCase().includes("already registered") ||
       message.toLowerCase().includes("invalid") ||
-      message.toLowerCase().includes("does not meet") ||
-      message.toLowerCase().includes("required") ||
-      message.toLowerCase().includes("too many requests") ||
-      message.toLowerCase().includes("failed") ||
-      message.toLowerCase().includes("limit reached"));
-
-  const isAlreadyRegistered =
-    message && message.toLowerCase().includes("already registered");
+      message.toLowerCase().includes("failed"));
 
   const requirements = {
     minLength: password.length >= 6,
@@ -133,9 +107,15 @@ export default function SignupScreen() {
     hasSpecial: /[!@#$%^&*\-]/.test(password),
   };
 
+  // 1. INTEGRATED REAL EMAIL SIGNUP FUNCTION
   const handleSubmit = async () => {
     if (!email || !password) {
       setMessage("Please fill in all fields");
+      return;
+    }
+
+    if (!Object.values(requirements).every(Boolean)) {
+      setMessage("Password does not meet all requirements.");
       return;
     }
 
@@ -143,76 +123,80 @@ export default function SignupScreen() {
     setMessage("");
 
     try {
-      const result = await signupWithOtp(email, password);
+      // Supabase Email Signup Call
+      await signUp(email, password);
 
-      if (result?.redirectTo) {
-        router.push(result.redirectTo);
-      } else if (result?.error) {
-        setMessage(result.error);
-      }
-    } catch (error) {
-      console.log(error);
-      setMessage("An unexpected error occurred. Please try again.");
+      // Success: Redirect to verification screen
+      setMessage("Success! Check your email for a verification link.");
+      router.push("/(auth)/verify");
+
+    } catch (error: any) {
+      // Error handling from the 'signUp' function
+      setMessage(error.message || "Signup failed. Please try again.");
     } finally {
       setIsPending(false);
     }
   };
 
+  // 2. INTEGRATED REAL GOOGLE SIGNUP (OAuth) FUNCTION
   const handleGoogleSignup = async () => {
     setIsPending(true);
-    try {
-      const result = await signInWithGoogle();
-      setMessage(result.message);
+    setMessage("");
 
-      if (result.success) {
-        router.replace("/(tabs)");
-      }
-    } catch (error) {
-      setMessage("Google signup failed.");
+    try {
+      await signInWithOAuth('google');
+      // OAuth success opens the browser. Navigation must be handled by the Auth Listener.
+      setMessage("Redirecting to Google...");
+    } catch (error: any) {
+      setMessage(error.message || "Google signup failed.");
     } finally {
+      // Do NOT set isPending to false immediately for OAuth.
       setIsPending(false);
     }
   };
 
+  // 3. INTEGRATED REAL APPLE SIGNUP (OAuth) FUNCTION
   const handleAppleSignup = async () => {
     setIsPending(true);
-    try {
-      const result = await signInWithApple();
-      setMessage(result.message);
+    setMessage("");
 
-      if (result.success) {
-        router.replace("/(tabs)");
-      }
-    } catch (error) {
-      setMessage("Apple signup failed.");
+    try {
+      await signInWithOAuth('apple');
+      // OAuth success opens the browser. Navigation must be handled by the Auth Listener.
+      setMessage("Redirecting to Apple...");
+    } catch (error: any) {
+      setMessage(error.message || "Apple signup failed.");
     } finally {
+      // Do NOT set isPending to false immediately for OAuth.
       setIsPending(false);
     }
   };
+
+  const isFormValid = email && password && Object.values(requirements).every(Boolean);
 
   return (
     <View className="flex-1 bg-white">
-      <View>
-        <HomeHeader />
-      </View>
+      <HomeHeader />
+
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{
+          paddingBottom: 0,
+        }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 px-6 justify-center py-8">
-          {/* Title Section */}
+        <View className="px-6 justify-center py-8">
+
           <Text className="text-2xl font-bold text-center text-black mb-2">
             Create Account
           </Text>
-          <Text className="text-base text-gray-600 dark:text-gray-400 text-center mb-8">
+          <Text className="text-base text-gray-600 text-center mb-8">
             Enter your details below to create a new account
           </Text>
 
           {/* OAuth Buttons */}
           <View className="flex flex-col gap-3">
-            {/* Google Signup Button */}
             <TouchableOpacity
-              className="flex-row items-center justify-center bg-white border border-gray-300  rounded-lg py-3 px-4 shadow-sm"
+              className="flex-row items-center justify-center bg-white border border-gray-300 rounded-lg py-3 px-4 shadow-sm"
               onPress={handleGoogleSignup}
               disabled={isPending}
             >
@@ -222,7 +206,6 @@ export default function SignupScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Apple Signup Button */}
             <TouchableOpacity
               className="flex-row items-center justify-center bg-white border border-gray-300 rounded-lg py-3 px-4 shadow-sm"
               onPress={handleAppleSignup}
@@ -235,24 +218,20 @@ export default function SignupScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Separator */}
           <View className="flex-row items-center my-6">
             <View className="flex-1 h-px bg-[#d1d5dc]" />
-            <Text className="mx-3 text-gray-500 dark:text-gray-400 text-sm">
+            <Text className="mx-3 text-gray-500 text-sm">
               Or continue with email
             </Text>
             <View className="flex-1 h-px bg-[#d1d5dc]" />
           </View>
 
-          {/* Signup Form */}
+          {/* Email */}
           <View className="flex flex-col gap-4">
-            {/* Email Input */}
             <View>
-              <Text className="text-base font-medium text-black mb-2">
-                Email
-              </Text>
+              <Text className="text-base font-medium text-black mb-2">Email</Text>
               <TextInput
-                className="border border-gray-300  rounded-lg py-3 px-4 text-base "
+                className="border border-gray-300 rounded-lg py-3 px-4 text-base"
                 placeholder="name@example.com"
                 placeholderTextColor="#999"
                 value={email}
@@ -262,7 +241,7 @@ export default function SignupScreen() {
               />
             </View>
 
-            {/* Password Input */}
+            {/* Password */}
             <View>
               <Text className="text-base font-medium text-black mb-2">
                 Password
@@ -277,7 +256,6 @@ export default function SignupScreen() {
                 autoCapitalize="none"
               />
 
-              {/* Password Requirements Checker */}
               <View className="mt-2 space-y-2">
                 <RequirementItem
                   met={requirements.minLength}
@@ -298,56 +276,40 @@ export default function SignupScreen() {
               </View>
             </View>
 
-            {/* Continue Button */}
+            {/* Submit */}
             <TouchableOpacity
-              className={`w-full px-3 py-4 bg-[#338059] rounded-2xl flex-row items-center justify-center ${isPending ? "opacity-50" : ""
+              className={`w-full px-3 py-4 bg-[#338059] rounded-2xl flex-row items-center justify-center ${isPending || !isFormValid ? "opacity-50" : ""
                 }`}
               onPress={handleSubmit}
-              disabled={isPending}
+              disabled={isPending || !isFormValid}
             >
               {isPending ? (
-                <View className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <Text className="text-white text-sm font-semibold">Signing Up...</Text>
               ) : (
-                <Text className="text-white text-sm font-semibold">
-                  Continue
-                </Text>
+                <Text className="text-white text-sm font-semibold">Continue</Text>
               )}
             </TouchableOpacity>
 
-            {/* Message Display */}
             {message ? (
-              <View className="mt-2">
-                {isAlreadyRegistered ? (
-                  <View className="space-y-2">
-                    <Text className="text-red-500 text-sm text-center">
-                      {message}
-                    </Text>
-                  </View>
-                ) : (
-                  <Text
-                    className={`text-sm text-center ${isError ? "text-red-500" : "text-green-500"
-                      }`}
-                  >
-                    {message}
-                  </Text>
-                )}
-              </View>
+              <Text
+                className={`text-sm text-center mt-2 ${isError ? "text-red-500" : "text-green-500"
+                  }`}
+              >
+                {message}
+              </Text>
             ) : null}
           </View>
 
           {/* Login Link */}
           <View className="flex-row justify-center mt-4">
-            <Text className="text-gray-600 dark:text-gray-400 text-sm">
-              Already have an account?{" "}
-            </Text>
+            <Text className="text-gray-600 text-sm">Already have an account? </Text>
             <Link href="/(auth)" asChild>
               <TouchableOpacity>
-                <Text className="text-blue-600 dark:text-blue-400 text-sm font-medium">
-                  Login
-                </Text>
+                <Text className="text-blue-600 text-sm font-medium">Login</Text>
               </TouchableOpacity>
             </Link>
           </View>
+
         </View>
       </ScrollView>
     </View>

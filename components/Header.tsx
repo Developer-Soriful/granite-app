@@ -1,80 +1,70 @@
 import { Images } from '@/assets';
+import { useAuth } from '@/context/AuthContext'; // 👈 Auth Context Import
 import { Feather, FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useNavigation, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const Header = () => {
-    const [notificationModalVisible, setNotificationModalVisible] = useState(false);
+    // 1. Access user session state
+    const { session, logout } = useAuth();
+
+    // State management for UI
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+
+    // Unused states for other modals are kept for structure but not directly relevant to auth
     const [avatarModalVisible, setAvatarModalVisible] = useState(false);
     const [supscriptionModalVisible, setSupscriptionModalVisible] = useState(false);
-    const navigation = useNavigation();
+
     const router = useRouter();
+    // const navigation = useNavigation(); // Not strictly needed for Expo Router navigation
 
     const handleSettingsToggle = () => {
         setSettingsModalVisible(true);
     };
 
-    // Sample notification data
-    const notifications = [
-        {
-            id: 1,
-            type: 'alert',
-            title: 'Daily spending alert',
-            message: 'Your spending today has exceeded your daily budget. You\'ve spent $25 more than planned.',
-            date: 'September 26, 2025',
-            isAlert: true
-        },
-        {
-            id: 2,
-            type: 'success',
-            title: "You're doing great!",
-            message: "Nice job! Your spending today is lower than your daily average.",
-            date: 'September 25, 2025',
-            isAlert: false
-        },
-        {
-            id: 3,
-            type: 'alert',
-            title: 'Daily spending alert',
-            message: "Your spending today has exceeded your daily budget. You've spent $58 more than planned.",
-            date: 'September 24, 2025',
-            isAlert: true
-        }
-    ];
     const handleSettings = () => {
-        console.log('Settings pressed');
-        router.push('/(tabs)/settings')
+        setSettingsModalVisible(false); // Close modal on navigation
+        router.push('/(tabs)/settings');
     };
 
     const handleLogout = async () => {
-        console.log('Logout pressed');
+        // 2. Set loading state and close modal
         setSettingsModalVisible(false);
+        setIsLoggingOut(true);
 
-        setTimeout(() => {
-            // Navigate to auth screen instead of root
-            router.navigate('/(auth)');
-        }, 300);
+        try {
+            logout()
+            // Note: Router navigation is automatically handled by AuthContext 
+            // when the session becomes null. Manual navigation is not needed here.
+
+        } catch (error: any) {
+            console.error('Logout Error:', error);
+            Alert.alert('Logout Failed', 'Could not sign out. Please try again.');
+        } finally {
+            setIsLoggingOut(false);
+        }
     };
-    // this is for handleAvater
+
+    // Avatar and Subscription handlers (as provided)
     const handleAvater = () => {
-        console.log('handleAvater pressed')
         setAvatarModalVisible(false)
         router.push('/(settings)/avater')
     }
-    // this is for handleSupscription
     const handleSupscription = () => {
-        console.log('handleSupscription pressed')
         setSupscriptionModalVisible(false)
         router.push('/(settings)/subscription')
     }
     const handleNotification = () => {
-        console.log('handleNotification pressed')
         setSupscriptionModalVisible(false)
         router.push('/(settings)/notification')
     }
+
+    // 4. Dynamically get the profile initial
+    const userInitial = session?.user?.email ? session.user.email[0].toUpperCase() : 'G';
+
     return (
         <>
             <View style={styles.header}>
@@ -98,7 +88,8 @@ const Header = () => {
 
                     <View style={styles.profileContainer}>
                         <View style={styles.header_icon_text}>
-                            <Text style={styles.profileInitial}>M</Text>
+                            {/* 5. Dynamic Profile Initial */}
+                            <Text style={styles.profileInitial}>{userInitial}</Text>
                         </View>
                     </View>
 
@@ -133,6 +124,7 @@ const Header = () => {
                             <Ionicons name="settings-outline" size={20} color="#111827" />
                             <Text style={styles.settingsButtonText}>Settings</Text>
                         </TouchableOpacity>
+
                         {/* Avatar Button */}
                         <TouchableOpacity
                             style={styles.settingsButton}
@@ -141,22 +133,31 @@ const Header = () => {
                             <Feather name="camera" size={20} color="black" />
                             <Text style={styles.settingsButtonText}>Avatar</Text>
                         </TouchableOpacity>
-                        {/* Supscription Button */}
+
+                        {/* Subscription Button (Corrected typo) */}
                         <TouchableOpacity
                             style={styles.settingsButton}
                             onPress={handleSupscription}
                         >
                             <FontAwesome5 name="user-edit" size={20} color="black" />
-                            <Text style={styles.settingsButtonText}>Supscription</Text>
+                            <Text style={styles.settingsButtonText}>Subscription</Text>
                         </TouchableOpacity>
 
                         {/* Logout Button */}
                         <TouchableOpacity
                             style={[styles.settingsButton, styles.logoutButton]}
                             onPress={handleLogout}
+                            disabled={isLoggingOut} // Disable during logout process
                         >
-                            <Ionicons name="log-out-outline" size={20} color="#DC2626" />
-                            <Text style={[styles.settingsButtonText, styles.logoutText]}>Logout</Text>
+                            {/* Show loading spinner while logging out */}
+                            {isLoggingOut ? (
+                                <ActivityIndicator size="small" color="#DC2626" />
+                            ) : (
+                                <Ionicons name="log-out-outline" size={20} color="#DC2626" />
+                            )}
+                            <Text style={[styles.settingsButtonText, styles.logoutText]}>
+                                {isLoggingOut ? 'Logging out...' : 'Logout'}
+                            </Text>
                         </TouchableOpacity>
                     </TouchableOpacity>
                 </TouchableOpacity>
