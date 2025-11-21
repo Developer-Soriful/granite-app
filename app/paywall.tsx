@@ -1,3 +1,4 @@
+import { useAuth } from '@/context/AuthContext';
 import { AntDesign, FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -50,20 +51,20 @@ export default function Paywall() {
     const [isLoading, setLoading] = useState(false);
     const currentPlan = pricing[billingCycle];
     const router = useRouter();
+    const { completePaywall } = useAuth();
     const handleSubscribe = async () => {
         setLoading(true);
         try {
-            // Mock API call - replace with your actual payment integration
-            const mockSessionId = 'mock_session_' + Date.now();
+            // Simulate payment processing
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
-            const stripe = await stripePromise;
-            await stripe.redirectToCheckout({ sessionId: mockSessionId });
+            // Update paywall status without actual payment
+            await completePaywall();
 
-            // In real app, you would navigate to success page after payment
-            // router.push('/(auth)/payment-success');
-
-        } catch (err: unknown) {
-            console.error('subscribe error:', err);
+            // Navigate to home
+            router.replace('/(tabs)');
+        } catch (error) {
+            console.error('Payment error:', error);
             Alert.alert('Error', 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);

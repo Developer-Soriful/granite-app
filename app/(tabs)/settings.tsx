@@ -13,8 +13,12 @@ import {
     View,
 } from 'react-native';
 
+// ---------------------------
+// Type Definitions
+// ---------------------------
+
 interface FixedExpensesData {
-    [key: string]: number | string;
+    [key: string]: number | string | Array<{ amount?: number | string }> | undefined;
     additional?: Array<{ amount?: number | string }>;
 }
 
@@ -39,12 +43,28 @@ interface Subscription {
     current_period_end: string;
 }
 
-const safeParseFloat = (value: number | string): number => {
+interface UserMetadata {
+    fullName?: string;
+    income?: number | string;
+    investments?: number | string;
+    savings?: number | string;
+    fixedExpenses?: FixedExpensesData;
+}
+
+// ---------------------------
+// Utility
+// ---------------------------
+
+const safeParseFloat = (value: number | string | undefined): number => {
     if (typeof value === 'number' && !isNaN(value)) return value;
     if (typeof value !== 'string' || value.trim() === '') return 0;
     const number = parseFloat(value);
     return isNaN(number) ? 0 : number;
 };
+
+// ---------------------------
+// Component
+// ---------------------------
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -52,6 +72,7 @@ export default function SettingsScreen() {
     const [userData, setUserData] = useState<any>(null);
     const [plaidItems, setPlaidItems] = useState<PlaidItem[]>([]);
     const [subscription, setSubscription] = useState<Subscription | null>(null);
+
     const [formDefaults, setFormDefaults] = useState<FormDefaults>({
         fullName: '',
         income: 0,
@@ -68,8 +89,10 @@ export default function SettingsScreen() {
         try {
             setLoading(true);
 
-            // Get current user
-            const { data: { user }, error: userError } = await dummySupabase.auth.getUser();
+            const {
+                data: { user },
+                error: userError,
+            } = await dummySupabase.auth.getUser();
 
             if (userError || !user) {
                 router.replace('/(auth)');
@@ -78,17 +101,17 @@ export default function SettingsScreen() {
 
             setUserData({ user });
 
-            // Fetch plaid items
+            // Plaid Items
             const { data: plaidData, error: plaidError } = await dummySupabase
                 .from('user_plaid_items')
                 .select('id, item_id, status, accounts')
                 .eq('user_id', user.id);
 
-            if (!plaidError && plaidData) {
-                setPlaidItems(plaidData);
+            if (!plaidError && Array.isArray(plaidData)) {
+                setPlaidItems(plaidData as PlaidItem[]);
             }
 
-            // Fetch subscription
+            // Subscription
             const { data: subscriptionData } = await dummySupabase
                 .from('subscriptions')
                 .select('status, cancel_at_period_end, current_period_end')
@@ -98,41 +121,35 @@ export default function SettingsScreen() {
                 .maybeSingle();
 
             if (subscriptionData) {
-                setSubscription(subscriptionData);
+                setSubscription(subscriptionData as Subscription);
             }
 
-            // Calculate form defaults
-            const defaults = user.user_metadata || {};
-            const fixedExpensesData: FixedExpensesData = defaults.fixedExpenses || {};
+            // Metadata
+            const metadata: UserMetadata = user.user_metadata || {};
+            const fixedExpenses: FixedExpensesData = metadata.fixedExpenses || {};
+
             let calculatedTotalFixedExpenses = 0;
 
-            // Calculate fixed expenses
-            for (const key in fixedExpensesData) {
-                if (
-                    key !== 'additional' &&
-                    Object.prototype.hasOwnProperty.call(fixedExpensesData, key)
-                ) {
-                    calculatedTotalFixedExpenses += safeParseFloat(fixedExpensesData[key]);
+            for (const key in fixedExpenses) {
+                if (key !== 'additional') {
+                    const value = fixedExpenses[key];
+                    if (typeof value === 'number' || typeof value === 'string') {
+                        calculatedTotalFixedExpenses += safeParseFloat(value);
+                    }
                 }
             }
 
-            if (Array.isArray(fixedExpensesData.additional)) {
-                fixedExpensesData.additional.forEach((item: { amount?: number | string }) => {
-                    if (
-                        typeof item === 'object' &&
-                        item !== null &&
-                        Object.prototype.hasOwnProperty.call(item, 'amount')
-                    ) {
-                        calculatedTotalFixedExpenses += safeParseFloat(item.amount ?? 0);
-                    }
+            if (Array.isArray(fixedExpenses.additional)) {
+                fixedExpenses.additional.forEach((item) => {
+                    calculatedTotalFixedExpenses += safeParseFloat(item?.amount);
                 });
             }
 
             setFormDefaults({
-                fullName: defaults.fullName || '',
-                income: safeParseFloat(defaults.income),
-                investments: safeParseFloat(defaults.investments),
-                savings: safeParseFloat(defaults.savings),
+                fullName: metadata.fullName || '',
+                income: safeParseFloat(metadata.income),
+                investments: safeParseFloat(metadata.investments),
+                savings: safeParseFloat(metadata.savings),
                 totalFixedExpenses: calculatedTotalFixedExpenses,
             });
 
@@ -158,8 +175,8 @@ export default function SettingsScreen() {
             <View
                 className="rounded-bl-[16px] rounded-br-[16px]"
                 style={{
-                    position: "absolute",
-                    backgroundColor: "#e6f5ee",
+                    position: 'absolute',
+                    backgroundColor: '#e6f5ee',
                     paddingTop: 16,
                     left: 0,
                     right: 0,
@@ -170,30 +187,27 @@ export default function SettingsScreen() {
             >
                 <Header />
             </View>
+
             <ScrollView
-                contentContainerStyle={{ padding: 16, paddingTop: 80, }}
+                contentContainerStyle={{
+                    padding: 16,
+                    paddingTop: 80,
+                }}
             >
-                {/* Page Header */}
                 <View className="mb-6">
-                    <Text className="text-3xl font-bold text-black">
-                        Settings
-                    </Text>
+                    <Text className="text-3xl font-bold text-black">Settings</Text>
                     <Text className="mt-2 text-sm text-black">
                         Manage your account preferences and financial information
                     </Text>
                 </View>
 
-                {/* Personal Information Card */}
                 <View className="rounded-2xl bg-white p-6 mb-6">
                     <SettingsForm defaults={formDefaults} onUpdate={loadUserData} />
                 </View>
 
-                {/* Bank Connections Card */}
                 <View className="rounded-2xl bg-white p-6 mb-6">
                     <View className="mb-6">
-                        <Text className="text-xl font-semibold text-black">
-                            Bank Connections
-                        </Text>
+                        <Text className="text-xl font-semibold text-black">Bank Connections</Text>
                         <Text className="mt-1 text-sm text-black">
                             Manage your connected bank accounts and financial institutions
                         </Text>
@@ -201,7 +215,6 @@ export default function SettingsScreen() {
                     <ConnectionManager items={plaidItems} onUpdate={loadUserData} />
                 </View>
 
-                {/* Grace Period Notice (if applicable) */}
                 <GracePeriodNotice subscription={subscription} />
             </ScrollView>
         </View>

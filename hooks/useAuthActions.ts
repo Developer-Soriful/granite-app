@@ -1,4 +1,7 @@
 import supabase from "@/config/supabase.config";
+import { EmailOtpType } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 
 /**
  * Verifies the OTP (token) sent to the user's email or phone.
@@ -39,17 +42,30 @@ export async function resendOtp({ email, type }: { email: string; type: ResendOt
 
 
 // --- NEW SIGN UP FUNCTIONALITY ---
+// In hooks/useAuthActions.ts
 export async function signUp(email: string, password: string) {
-    const { data: user, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-    });
+    try {
+        // First sign out any existing session
+        await supabase.auth.signOut();
 
-    if (error) {
+        // Sign up with email confirmation
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                emailRedirectTo: 'granite://auth/verify',  // Make sure this matches your app's scheme
+                data: {
+                    email_confirm: true
+                }
+            }
+        });
+
+        if (error) throw error;
+        return { user: data.user, session: data.session };
+    } catch (error: any) {
         console.error('Sign-up Error:', error.message);
-        throw new Error(error.message);
+        throw error;
     }
-    return user;
 }
 // ---------------------------------
 
@@ -65,15 +81,15 @@ export async function signIn(email: string, password: string) {
     }
 }
 
-import { EmailOtpType } from '@supabase/supabase-js';
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
-
 export async function signInWithOAuth(provider: 'google' | 'apple') {
     try {
+        // Warm up the browser
+        await WebBrowser.warmUpAsync();
+
         // Get the redirect URL for the auth callback
-        const redirectUrl = Linking.createURL('auth/callback');
-        
+        // This must match the scheme defined in app.json (granite://) or exp:// for Expo Go
+        const redirectUrl = Linking.createURL('auth-callback');
+
         console.log('Starting OAuth flow for:', provider);
         console.log('Redirect URL:', redirectUrl);
 
@@ -82,7 +98,7 @@ export async function signInWithOAuth(provider: 'google' | 'apple') {
             provider: provider,
             options: {
                 redirectTo: redirectUrl,
-                skipBrowserRedirect: true, // We'll handle the redirect manually
+                skipBrowserRedirect: true,
             },
         });
 
@@ -90,41 +106,83 @@ export async function signInWithOAuth(provider: 'google' | 'apple') {
             console.error('OAuth initialization error:', error);
             throw error;
         }
-        
+
         if (!data?.url) {
             throw new Error('No authentication URL returned');
         }
 
         console.log('Opening browser for OAuth flow...');
-        
+
         // Open the OAuth URL in the browser
         const result = await WebBrowser.openAuthSessionAsync(
             data.url,
             redirectUrl,
             {
                 showInRecents: true,
-                preferEphemeralSession: false, // Important for iOS to handle redirects properly
+                // preferEphemeralSession: true, // Try true for iOS if false fails, but false is usually better for persistent auth
             }
         );
 
+        // Cool down the browser
+        await WebBrowser.coolDownAsync();
+
         console.log('OAuth result type:', result.type);
-        
-        // The actual session will be handled by the auth state change listener in AuthContext
-        // We just need to handle any errors here
+
+        if (result.type === 'success' && result.url) {
+            // Parse the URL to extract the access token
+            // The URL will look like: granite://auth/callback#access_token=...&refresh_token=...&...
+
+            const urlStr = result.url;
+            console.log('Redirect URL received:', urlStr);
+
+            // Extract the hash part or query part
+            const hashIndex = urlStr.indexOf('#');
+            const queryIndex = urlStr.indexOf('?');
+
+            let paramsStr = '';
+            if (hashIndex !== -1) {
+                paramsStr = urlStr.substring(hashIndex + 1);
+            } else if (queryIndex !== -1) {
+                paramsStr = urlStr.substring(queryIndex + 1);
+            }
+
+            if (!paramsStr) {
+                console.error('No parameters found in redirect URL');
+                throw new Error('Authentication failed: No tokens found');
+            }
+
+            // Parse parameters
+            const params = new URLSearchParams(paramsStr);
+            const accessToken = params.get('access_token');
+            const refreshToken = params.get('refresh_token');
+
+            if (accessToken && refreshToken) {
+                console.log('Tokens found, setting session...');
+                const { error: sessionError } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken,
+                });
+
+                if (sessionError) {
+                    console.error('Error setting session:', sessionError);
+                    throw sessionError;
+                }
+
+            } else {
+                console.error('Missing tokens in redirect URL');
+                throw new Error('Authentication failed: Missing tokens');
+            }
+        }
+
+        // Handle cancellation
         if (result.type === 'cancel' || result.type === 'dismiss') {
             throw new Error('Authentication was cancelled');
         }
-        
-        // Handle all possible result types
-        if (result.type !== 'success') {
-            console.error('OAuth flow did not complete successfully:', result.type);
-            throw new Error('Authentication failed or was cancelled');
-        }
-        
-        // If we get here, the authentication was successful
-        // The session will be handled by the auth state change listener
-        return { success: true };
-        
+
+        // Handle other failures
+        console.error('OAuth flow did not complete successfully:', result.type);
+        throw new Error('Authentication failed or was cancelled');
+
     } catch (error) {
         console.error(`OAuth Sign-in Error with ${provider}:`, error);
         throw error;

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import PlaidDisconnectButton from './PlaidDisconnectButton';
 
-import PlaidOnboard from './PlaidOnboard';
+
 import PlaidUpdateButton from './PlaidUpdateButton';
 
 interface Account {
@@ -41,14 +41,9 @@ export default function ConnectionManager({ items, onUpdate }: ConnectionManager
         ].includes(status);
     };
 
-    const handleItemUpdate = () => {
-        if (onUpdate) {
-            onUpdate();
-        }
-    };
 
     return (
-        <View className="space-y-4">
+        <View>
             {items.length === 0 && (
                 <View className="bg-gray-200 rounded-[16px] p-4">
                     <Text className="text-red-600 text-center">
@@ -102,22 +97,16 @@ export default function ConnectionManager({ items, onUpdate }: ConnectionManager
                                             ? 'new_accounts'
                                             : 'login_required'
                                     }
-                                    onUpdate={handleItemUpdate}
                                 />
                             ) : (
                                 <PlaidDisconnectButton
                                     itemId={item.item_id}
-                                    onUpdate={handleItemUpdate}
                                 />
                             )}
                         </View>
                     </View>
                 );
             })}
-
-            <View className="mt-6">
-                <PlaidOnboard onSuccess={handleItemUpdate} />
-            </View>
         </View>
     );
 }

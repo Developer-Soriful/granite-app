@@ -11,7 +11,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.granite.app",
-      "associatedDomains": ["applinks:granite.app"]
+      "associatedDomains": [
+        "applinks:granite.app"
+      ]
     },
     "android": {
       "intentFilters": [
@@ -23,7 +25,10 @@
               "scheme": "granite"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "softwareKeyboardLayoutMode": "resize",

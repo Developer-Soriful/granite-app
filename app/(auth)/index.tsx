@@ -113,7 +113,7 @@ export default function LoginScreen() {
       // Navigation should ideally be handled by the Auth Listener, 
       // but for immediate feedback on email/password, we navigate here.
       setMessage("Login successful!");
-      router.replace("/(tabs)");
+      router.replace("/");
     } catch (error: any) {
       // Error is caught from the 'signIn' function
       setMessage(error.message || "Login failed. Please try again.");

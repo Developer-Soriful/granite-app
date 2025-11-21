@@ -120,18 +120,24 @@ export default function SignupScreen() {
     }
 
     setIsPending(true);
-    setMessage("");
+    setMessage("Creating your account...");
 
     try {
-      // Supabase Email Signup Call
-      await signUp(email, password);
+      // Sign up the user - this will automatically send verification email
+      const { user } = await signUp(email, password);
 
-      // Success: Redirect to verification screen
-      setMessage("Success! Check your email for a verification link.");
-      router.push("/(auth)/verify");
+      // Show success message and redirect to verify page
+      setMessage("Success! Please check your email for the verification code.");
+      router.replace({
+        pathname: '/(auth)/verify',
+        params: {
+          email: email,
+          message: "We've sent a 6-digit verification code to your email."
+        }
+      });
 
     } catch (error: any) {
-      // Error handling from the 'signUp' function
+      console.error('Signup error:', error);
       setMessage(error.message || "Signup failed. Please try again.");
     } finally {
       setIsPending(false);
@@ -146,14 +152,14 @@ export default function SignupScreen() {
     try {
       // Show loading state
       setMessage("Redirecting to Google...");
-      
+
       // Start the OAuth flow
       const result = await signInWithOAuth('google');
-      
+
       // If we get here, the OAuth flow was initiated successfully
       // The actual authentication will be handled by the auth state change listener
       console.log('OAuth flow initiated successfully');
-      
+      return result
     } catch (error: any) {
       console.error('Google OAuth error:', error);
       setMessage(error.message || "Google sign-in failed. Please try again.");
@@ -169,14 +175,14 @@ export default function SignupScreen() {
     try {
       // Show loading state
       setMessage("Redirecting to Apple...");
-      
+
       // Start the OAuth flow
       const result = await signInWithOAuth('apple');
-      
+
       // If we get here, the OAuth flow was initiated successfully
       // The actual authentication will be handled by the auth state change listener
       console.log('Apple OAuth flow initiated successfully');
-      
+      return result
     } catch (error: any) {
       console.error('Apple OAuth error:', error);
       setMessage(error.message || "Apple sign-in failed. Please try again.");

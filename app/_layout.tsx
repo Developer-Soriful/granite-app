@@ -1,13 +1,40 @@
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { Redirect, Slot, Stack, useRouter } from "expo-router";
+import { Redirect, Slot, Stack, useRouter, useSegments } from "expo-router";
 import React, { useEffect } from 'react';
 import { BackHandler, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import "./global.css";
 
 function AppRoutes() {
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, hasCompletedPaywall } = useAuth();
   const router = useRouter();
+  const segments = useSegments();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+    const inTabsGroup = segments[0] === '(tabs)';
+    const inSettingsGroup = segments[0] === 'settings';
+
+    if (!session) {
+      // If no session and not in auth group, redirect to auth
+      if (!inAuthGroup) {
+        router.replace('/');
+      }
+    } else {
+      // If has session but not completed paywall, redirect to paywall
+      if (!hasCompletedPaywall) {
+        if (segments[0] !== 'paywall') {
+          router.replace('/paywall');
+        }
+      }
+      // If in auth group but has session, redirect to tabs
+      else if (inAuthGroup) {
+        router.replace('/(tabs)');
+      }
+    }
+  }, [session, segments, isLoading, hasCompletedPaywall]);
 
   // Show loading indicator only for a very short time
   if (isLoading) {
@@ -20,11 +47,10 @@ function AppRoutes() {
 
   // If no session, redirect to auth screen
   if (!session) {
-    console.log('No session found, redirecting to auth screen');
     return (
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Redirect href="/(auth)/signup" />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Redirect href="/" />
       </Stack>
     );
   }
@@ -43,7 +69,6 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    // ... (BackHandler logic remains unchanged) ...
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
@@ -58,12 +83,14 @@ export default function RootLayout() {
   }, [router]);
 
   return (
-    <AuthProvider>
-      <SafeAreaView style={{ flex: 1, paddingBottom: 0 }} edges={["top"]} >
-        <View style={{ flex: 1 }}>
-          <AppRoutes />
-        </View>
-      </SafeAreaView>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
+          <View style={{ flex: 1 }}>
+            <AppRoutes />
+          </View>
+        </SafeAreaView>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

@@ -7,6 +7,7 @@ import Features from '@/components/Features';
 import HomeHeader from '@/components/HomeHeader';
 import HowItWork from '@/components/HowItWork';
 import Testimonial from '@/components/Testimonial';
+import { useAuth } from "@/context/AuthContext";
 import { SectionRefs } from '@/types/navigation';
 import Button from '@/ui/Button';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,6 +45,14 @@ const HomePage = () => {
 
         return () => clearInterval(interval);
     }, []);
+
+    // Check for existing session and redirect to dashboard
+    const { session } = useAuth();
+    useEffect(() => {
+        if (session) {
+            router.replace('/(tabs)');
+        }
+    }, [session]);
 
     // Create refs for each section
     const howItWorksRef = useRef<View>(null);
@@ -91,7 +100,7 @@ const HomePage = () => {
                     onScroll={handleScroll}
                     scrollEventThrottle={16}
                 >
-                    <View className='w-full h-full px-4 flex flex-col gap-4 bg-white'>
+                    <View className='w-full h-full px-4 flex flex-col gap-4 bg-white mt-4'>
                         {/* this is for get started section */}
                         <View className='bg-[#ebf3ee]  px-5 pt-5 flex flex-col gap-4 rounded-[24px] mt-6'>
                             <Text className='font-bold text-[30px]'
