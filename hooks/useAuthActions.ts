@@ -1,10 +1,9 @@
-import supabase from '../config/supabase.config';
+import supabase from "@/config/supabase.config";
 
-// --- ADDED OTP VERIFICATION FUNCTIONALITY ---
 /**
  * Verifies the OTP (token) sent to the user's email or phone.
  */
-export async function verifyOtp({ email, token, type }: { email: string; token: string; type: 'email' | 'phone' }) {
+export async function verifyOtp({ email, token, type }: { email: string; token: string; type: EmailOtpType }) {
     const { data, error } = await supabase.auth.verifyOtp({
         email: email,
         token: token,
@@ -22,7 +21,9 @@ export async function verifyOtp({ email, token, type }: { email: string; token: 
 /**
  * Resends the OTP/confirmation link for various authentication events.
  */
-export async function resendOtp({ email, type }: { email: string; type: 'signup' | 'invite' | 'magiclink' | 'forgotten_password' | 'email_change' }) {
+type ResendOtpType = 'signup' | 'email_change';
+
+export async function resendOtp({ email, type }: { email: string; type: ResendOtpType }) {
     const { error } = await supabase.auth.resend({
         email: email,
         type: type,
@@ -64,18 +65,69 @@ export async function signIn(email: string, password: string) {
     }
 }
 
-export async function signInWithOAuth(provider: 'google' | 'apple') {
-    const { error } = await supabase.auth.signInWithOAuth({
-        provider: provider,
-        options: {
-            redirectTo: 'granite://auth/callback',
-            skipBrowserRedirect: false,
-        },
-    });
+import { EmailOtpType } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 
-    if (error) {
-        console.error(`OAuth Sign-in Error with ${provider}:`, error.message);
-        throw new Error(error.message);
+export async function signInWithOAuth(provider: 'google' | 'apple') {
+    try {
+        // Get the redirect URL for the auth callback
+        const redirectUrl = Linking.createURL('auth/callback');
+        
+        console.log('Starting OAuth flow for:', provider);
+        console.log('Redirect URL:', redirectUrl);
+
+        // Start the OAuth flow
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: provider,
+            options: {
+                redirectTo: redirectUrl,
+                skipBrowserRedirect: true, // We'll handle the redirect manually
+            },
+        });
+
+        if (error) {
+            console.error('OAuth initialization error:', error);
+            throw error;
+        }
+        
+        if (!data?.url) {
+            throw new Error('No authentication URL returned');
+        }
+
+        console.log('Opening browser for OAuth flow...');
+        
+        // Open the OAuth URL in the browser
+        const result = await WebBrowser.openAuthSessionAsync(
+            data.url,
+            redirectUrl,
+            {
+                showInRecents: true,
+                preferEphemeralSession: false, // Important for iOS to handle redirects properly
+            }
+        );
+
+        console.log('OAuth result type:', result.type);
+        
+        // The actual session will be handled by the auth state change listener in AuthContext
+        // We just need to handle any errors here
+        if (result.type === 'cancel' || result.type === 'dismiss') {
+            throw new Error('Authentication was cancelled');
+        }
+        
+        // Handle all possible result types
+        if (result.type !== 'success') {
+            console.error('OAuth flow did not complete successfully:', result.type);
+            throw new Error('Authentication failed or was cancelled');
+        }
+        
+        // If we get here, the authentication was successful
+        // The session will be handled by the auth state change listener
+        return { success: true };
+        
+    } catch (error) {
+        console.error(`OAuth Sign-in Error with ${provider}:`, error);
+        throw error;
     }
 }
 

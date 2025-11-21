@@ -144,13 +144,19 @@ export default function SignupScreen() {
     setMessage("");
 
     try {
-      await signInWithOAuth('google');
-      // OAuth success opens the browser. Navigation must be handled by the Auth Listener.
+      // Show loading state
       setMessage("Redirecting to Google...");
+      
+      // Start the OAuth flow
+      const result = await signInWithOAuth('google');
+      
+      // If we get here, the OAuth flow was initiated successfully
+      // The actual authentication will be handled by the auth state change listener
+      console.log('OAuth flow initiated successfully');
+      
     } catch (error: any) {
-      setMessage(error.message || "Google signup failed.");
-    } finally {
-      // Do NOT set isPending to false immediately for OAuth.
+      console.error('Google OAuth error:', error);
+      setMessage(error.message || "Google sign-in failed. Please try again.");
       setIsPending(false);
     }
   };
@@ -161,13 +167,19 @@ export default function SignupScreen() {
     setMessage("");
 
     try {
-      await signInWithOAuth('apple');
-      // OAuth success opens the browser. Navigation must be handled by the Auth Listener.
+      // Show loading state
       setMessage("Redirecting to Apple...");
+      
+      // Start the OAuth flow
+      const result = await signInWithOAuth('apple');
+      
+      // If we get here, the OAuth flow was initiated successfully
+      // The actual authentication will be handled by the auth state change listener
+      console.log('Apple OAuth flow initiated successfully');
+      
     } catch (error: any) {
-      setMessage(error.message || "Apple signup failed.");
-    } finally {
-      // Do NOT set isPending to false immediately for OAuth.
+      console.error('Apple OAuth error:', error);
+      setMessage(error.message || "Apple sign-in failed. Please try again.");
       setIsPending(false);
     }
   };

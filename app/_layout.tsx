@@ -7,23 +7,33 @@ import "./global.css";
 
 function AppRoutes() {
   const { session, isLoading } = useAuth();
+  const router = useRouter();
 
-  // 1. Loading Check
+  // Show loading indicator only for a very short time
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        {/* <ActivityIndicator size="large" color="#338059" /> */}
-        <Text>loading</Text>
+        <Text>Loading...</Text>
       </View>
     );
   }
 
+  // If no session, redirect to auth screen
   if (!session) {
-    return <Redirect href="/(auth)" />;
+    console.log('No session found, redirecting to auth screen');
+    return (
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Redirect href="/(auth)/signup" />
+      </Stack>
+    );
   }
 
+  // If session exists, show the main app
   return (
     <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Slot />
     </Stack>
   );
