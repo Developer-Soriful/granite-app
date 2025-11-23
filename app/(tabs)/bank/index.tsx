@@ -67,7 +67,7 @@ const BankScreen = () => {
                     onPress={() => setActiveTab('accounts')}
                 >
                     <Text style={[styles.tabText, activeTab === 'accounts' && styles.activeTabText]}>
-                        Accounts ({accounts.length})
+                        Accounts ({accounts?.length ?? 0})
                     </Text>
                 </TouchableOpacity>
 

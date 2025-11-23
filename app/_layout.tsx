@@ -1,6 +1,7 @@
 import supabase from "@/config/supabase.config";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { PlaidProvider } from "@/context/PlaidContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Linking from "expo-linking";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -9,6 +10,7 @@ import { BackHandler, View } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import "./global.css";
+const queryClient = new QueryClient();
 
 /* -----------------------------
       APP ROUTES LOGIC
@@ -88,17 +90,19 @@ export default function RootLayout() {
   }, [router]);
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <PlaidProvider>
-          <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
-            <StatusBar style="dark" />
-            <View style={{ flex: 1 }}>
-              <AppRoutes />
-            </View>
-          </SafeAreaView>
-        </PlaidProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <PlaidProvider>
+            <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
+              <StatusBar style="dark" />
+              <View style={{ flex: 1 }}>
+                <AppRoutes />
+              </View>
+            </SafeAreaView>
+          </PlaidProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </QueryClientProvider>
   );
 }

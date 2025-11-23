@@ -1,125 +1,36 @@
-// components/plaid/PlaidLinkButton.tsx
-import { MaterialIcons } from '@expo/vector-icons';
-import React, { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { LinkExit, LinkSuccess } from 'react-native-plaid-link-sdk';
-import { usePlaid } from '../../context/PlaidContext';
+// src/components/plaid/ConnectBankButton.tsx
+import { usePlaid } from "@/context/PlaidContext";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 
-interface PlaidLinkButtonProps {
-  onSuccess?: (success: LinkSuccess) => void;
-  onExit?: (exit: LinkExit) => void;
-  style?: object;
-  text?: string;
-  variant?: 'primary' | 'secondary';
-}
-
-export const PlaidLinkButton: React.FC<PlaidLinkButtonProps> = ({
-  onSuccess,
-  onExit,
-  style,
-  text = 'Connect Bank Account',
-  variant = 'primary',
-}) => {
-  const {
-    linkToken,
-    isLoading,
-    fetchLinkToken,
-    exchangePublicToken
-  } = usePlaid();
-
-  useEffect(() => {
-    if (!linkToken && !isLoading) {
-      fetchLinkToken().catch(console.error);
-    }
-  }, [linkToken, isLoading, fetchLinkToken]);
-
-  const handlePress = async () => {
-    if (!linkToken) {
-      console.warn('Link token not ready');
-      return;
-    }
-
-    try {
-      const { openLink } = require('react-native-plaid-link-sdk');
-      openLink({
-        tokenConfig: {
-          token: linkToken,
-          noLoadingState: true,
-        },
-        onSuccess: async (success: LinkSuccess) => {
-          try {
-            await exchangePublicToken(success.publicToken, success.metadata);
-            onSuccess?.(success);
-          } catch (err) {
-            console.error('Error handling success:', err);
-          }
-        },
-        onExit: (exit: LinkExit) => {
-          console.log('Plaid Link exit:', exit);
-          onExit?.(exit);
-        },
-      });
-    } catch (err) {
-      console.error('Error opening Plaid Link:', err);
-    }
-  };
-
-  if (isLoading && !linkToken) {
-    return (
-      <View style={[styles.button, styles.loading, style]}>
-        <ActivityIndicator size="small" color="#fff" />
-      </View>
-    );
-  }
+export default function PlaidLinkButton() {
+  const { connectBank, isLoading, error } = usePlaid();
 
   return (
-    <TouchableOpacity
-      style={[
-        styles.button,
-        variant === 'primary' ? styles.primary : styles.secondary,
-        style,
-      ]}
-      onPress={handlePress}
-      disabled={isLoading}
-    >
-      <MaterialIcons name="account-balance" size={20} color={variant === 'primary' ? '#fff' : '#4A90E2'} />
-      <Text style={[styles.buttonText, variant === 'primary' ? styles.primaryText : styles.secondaryText]}>
-        {isLoading ? 'Connecting...' : text}
-      </Text>
-    </TouchableOpacity>
-  );
-};
+    <View className="p-4">
+      <TouchableOpacity
+        onPress={connectBank}
+        disabled={isLoading}
+        className="bg-emerald-600 py-5 px-8 rounded-2xl flex-row items-center justify-center space-x-3 shadow-lg"
+      >
+        {isLoading ? (
+          <>
+            <ActivityIndicator color="white" size="small" />
+            <Text className="text-white font-bold text-lg">Connecting...</Text>
+          </>
+        ) : (
+          <>
+            <MaterialCommunityIcons name="bank-outline" size={24} color="white" />
+            <Text className="text-white font-bold text-lg">Connect Your Bank</Text>
+          </>
+        )}
+      </TouchableOpacity>
 
-const styles = StyleSheet.create({
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    minWidth: 200,
-  },
-  primary: {
-    backgroundColor: '#4A90E2',
-  },
-  secondary: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#4A90E2',
-  },
-  buttonText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  primaryText: {
-    color: '#fff',
-  },
-  secondaryText: {
-    color: '#4A90E2',
-  },
-  loading: {
-    backgroundColor: '#A0C4FF',
-  },
-});
+      {error && (
+        <Text className="text-red-500 text-center mt-3 font-medium">
+          {error}
+        </Text>
+      )}
+    </View>
+  );
+}

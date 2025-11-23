@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "granite",
+    "name": "Granite Finance",
     "slug": "granite",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,18 +9,20 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "bundleIdentifier": "com.granitefinance.app", // ← CHANGE THIS
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
           "plaid"
         ]
       },
       "supportsTablet": true,
-      "bundleIdentifier": "com.granite.app",
       "associatedDomains": [
-        "applinks:granite.app"
+        "applinks:www.granitefinance.io", // ← ADD THIS
+        "applinks:granitefinance.io"
       ]
     },
     "android": {
+      "package": "com.granitefinance.app", // ← ADD THIS (same as iOS)
       "intentFilters": [
         {
           "action": "VIEW",
@@ -28,6 +30,14 @@
           "data": [
             {
               "scheme": "granite"
+            },
+            {
+              "host": "www.granitefinance.io",
+              "scheme": "https"
+            },
+            {
+              "host": "granitefinance.io",
+              "scheme": "https"
             }
           ],
           "category": [

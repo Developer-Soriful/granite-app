@@ -1,157 +1,139 @@
-// context/PlaidContext.tsx
-import React, { createContext, useContext, useState } from 'react';
-import * as PlaidService from '../services/plaid';
+// src/context/PlaidContext.tsx  ← EI FILE TA PURA REPLACE KOR
+import { API_URL } from "@/config";
+import { PlaidService } from "@/services/plaid";
+import { createContext, useContext, useState } from "react";
+import { Alert } from "react-native";
+import { create, LinkExit, LinkSuccess } from "react-native-plaid-link-sdk";
 
-interface PlaidAccount {
-    id: string;
-    name: string;
-    mask: string;
-    type: string;
-    subtype: string;
-    item_id: string;
-    institution_name: string;
-    balances: {
-        available: number | null;
-        current: number;
-        limit: number | null;
-    };
-}
-
-interface PlaidTransaction {
-    id: string;
-    account_id: string;
-    amount: number;
-    category: string[];
-    date: string;
-    merchant_name: string | null;
-    name: string;
-    pending: boolean;
-}
+type Account = any;
+type Transaction = any;
 
 type PlaidContextType = {
-    linkToken: string | null;
-    accounts: PlaidAccount[];
-    transactions: PlaidTransaction[];
+    accounts: Account[];
+    transactions: Transaction[];
     isLoading: boolean;
     error: string | null;
-    fetchLinkToken: () => Promise<void>;
-    exchangePublicToken: (publicToken: string, metadata: any) => Promise<void>;
+    connectBank: () => Promise<void>;
+    reconnectBank: (itemId: string) => Promise<void>;
+    removeBank: (itemId: string) => Promise<void>;
     fetchAccounts: () => Promise<void>;
-    fetchTransactions: (startDate: string, endDate: string) => Promise<void>;
-    createUpdateLinkToken: (itemId: string) => Promise<string>;
-    removePlaidItem: (itemId: string) => Promise<void>;
+    fetchTransactions: (start: string, end: string) => Promise<void>;
 };
 
 const PlaidContext = createContext<PlaidContextType | undefined>(undefined);
 
 export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
-    const [linkToken, setLinkToken] = useState<string | null>(null);
-    const [accounts, setAccounts] = useState<PlaidAccount[]>([]);
-    const [transactions, setTransactions] = useState<PlaidTransaction[]>([]);
+    const [accounts, setAccounts] = useState<Account[]>([]);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchLinkToken = async () => {
+    const fetchAccounts = async () => {
+        console.log("Calling link token URL:", `${API_URL}/api/plaid/link-token`);
+        try {
+            setIsLoading(true);
+            const res = await fetch(`${API_URL}/api/plaid/accounts`, {
+                credentials: "include",
+            });
+            if (!res.ok) throw new Error("Failed to load accounts");
+            const data = await res.json();
+            setAccounts(data.accounts || []);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchTransactions = async (start: string, end: string) => {
+        try {
+            setIsLoading(true);
+            const res = await fetch(
+                `${API_URL}/api/plaid/transactions?start_date=${start}&end_date=${end}`,
+                { credentials: "include" }
+            );
+            if (!res.ok) throw new Error("Failed to load transactions");
+            const data = await res.json();
+            setTransactions(data.transactions || []);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const connectBank = async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const token = await PlaidService.createLinkToken('current-user-id');
-            setLinkToken(token);
-        } catch (err) {
-            setError('Failed to connect to Plaid. Please try again.');
-            console.error('Error creating link token:', err);
+            const link_token = await PlaidService.getLinkToken();
+
+            const handler = create({
+                token: link_token,
+                onSuccess: async (success: LinkSuccess) => {
+                    await PlaidService.exchangeToken(success.publicToken);
+                    await fetchAccounts();
+                    Alert.alert("Success", "Bank connected!");
+                },
+                onExit: (exit: LinkExit) => {
+                    if (exit.error) setError(exit.error.displayMessage || "Cancelled");
+                    setIsLoading(false);
+                },
+            });
+
+            await handler.open();
+        } catch (err: any) {
+            setError(err.message || "Failed to connect");
+            setIsLoading(false);
+        }
+    };
+
+    const reconnectBank = async (itemId: string) => {
+        setIsLoading(true);
+        try {
+            const link_token = await PlaidService.getUpdateLinkToken(itemId);
+            const handler = create({
+                token: link_token,
+                onSuccess: () => {
+                    fetchAccounts();
+                    Alert.alert("Success", "Bank reconnected!");
+                },
+            });
+            await handler.open();
+        } catch (err: any) {
+            setError(err.message);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const createUpdateLinkToken = async (itemId: string) => {
-        try {
-            setIsLoading(true);
-            const token = await PlaidService.createUpdateLinkToken(itemId);
-            return token;
-        } catch (err) {
-            setError('Failed to update bank connection. Please try again.');
-            console.error('Error creating update link token:', err);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const exchangePublicToken = async (publicToken: string, metadata: any) => {
-        try {
-            setIsLoading(true);
-            const result = await PlaidService.exchangePublicToken(publicToken, metadata);
-            await fetchAccounts();
-            return result;
-        } catch (err) {
-            setError('Failed to connect account. Please try again.');
-            console.error('Error exchanging public token:', err);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const fetchAccounts = async () => {
-        try {
-            setIsLoading(true);
-            const data = await PlaidService.getAccounts();
-            setAccounts(data.accounts || []);
-        } catch (err) {
-            setError('Failed to load accounts. Please try again.');
-            console.error('Error fetching accounts:', err);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const fetchTransactions = async (startDate: string, endDate: string) => {
-        try {
-            setIsLoading(true);
-            const data = await PlaidService.getTransactions(startDate, endDate);
-            setTransactions(data.transactions || []);
-        } catch (err) {
-            setError('Failed to load transactions. Please try again.');
-            console.error('Error fetching transactions:', err);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const removePlaidItem = async (itemId: string) => {
-        try {
-            setIsLoading(true);
-            await PlaidService.removePlaidItem(itemId);
-            await fetchAccounts();
-        } catch (err) {
-            setError('Failed to remove bank account. Please try again.');
-            console.error('Error removing Plaid item:', err);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
+    const removeBank = async (itemId: string) => {
+        Alert.alert("Remove Bank", "Are you sure?", [
+            { text: "Cancel" },
+            {
+                text: "Remove",
+                style: "destructive",
+                onPress: async () => {
+                    await PlaidService.removeItem(itemId);
+                    await fetchAccounts();
+                    Alert.alert("Removed", "Bank account removed");
+                },
+            },
+        ]);
     };
 
     return (
-        <PlaidContext.Provider
-            value={{
-                linkToken,
-                accounts,
-                transactions,
-                isLoading,
-                error,
-                fetchLinkToken,
-                exchangePublicToken,
-                fetchAccounts,
-                fetchTransactions,
-                createUpdateLinkToken,
-                removePlaidItem,
-            }}
-        >
+        <PlaidContext.Provider value={{
+            accounts,
+            transactions,
+            isLoading,
+            error,
+            connectBank,
+            reconnectBank,
+            removeBank,
+            fetchAccounts,
+            fetchTransactions,
+        }}>
             {children}
         </PlaidContext.Provider>
     );
@@ -159,8 +141,6 @@ export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const usePlaid = () => {
     const context = useContext(PlaidContext);
-    if (context === undefined) {
-        throw new Error('usePlaid must be used within a PlaidProvider');
-    }
+    if (!context) throw new Error("usePlaid must be used within PlaidProvider");
     return context;
 };

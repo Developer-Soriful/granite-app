@@ -6,10 +6,45 @@ import DailySpendingChart from "@/components/DailySpendingChart";
 import Header from "@/components/Header";
 import SpendingChart from "@/components/SpendingChart";
 import TopExpensesList from "@/components/TopExpensesList";
+import { InsightsApi } from '@/services/ApiService';
 import { Ionicons } from "@expo/vector-icons";
-import { Image, ScrollView, Text, View } from "react-native";
-
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useQuery } from '@tanstack/react-query';
+import { format } from "date-fns";
+import { useState } from "react";
+import { Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 const Insights = () => {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+
+  const { data: spendingData } = useQuery({
+    queryKey: ['insights', 'spending', currentMonth],
+    queryFn: () => InsightsApi.getSpendingByCategory(currentMonth).then(res => res.data),
+  });
+
+  const { data: dailySpending } = useQuery({
+    queryKey: ['insights', 'daily', currentMonth],
+    queryFn: () => InsightsApi.getDailySpending(currentMonth).then(res => res.data),
+  });
+
+  const { data: budgetTrends } = useQuery({
+    queryKey: ['insights', 'budget-trends'],
+    queryFn: () => InsightsApi.getBudgetTrends().then(res => res.data),
+  });
+  const [date, setDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
+
+  const onChange = (event: any, selectedDate?: Date) => {
+    const currentDate = selectedDate || date;
+    setShowPicker(Platform.OS === "ios"); // iOS e always open thake
+    setDate(currentDate);
+  };
+
+  const showDatePicker = () => {
+    setShowPicker(true);
+  };
+
+  // Format: "September, 2025"
+  const displayText = format(date, "MMMM, yyyy");
   return (
     <View
       style={{ flex: 1, backgroundColor: "#e6f5ee", paddingTop: 8 }}
@@ -40,12 +75,31 @@ const Insights = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* this is for Insights heading and date part */}
-        <View className="flex flex-row justify-between items-center">
-          <Text className="font-semibold text-2xl">Insights</Text>
-          <View className="flex flex-row items-center justify-center gap-3 bg-white px-4 py-3 rounded-[12px]">
-            <Text className="text-sm">September, 2025</Text>
+        <View className="flex flex-row justify-between items-center mb-6">
+          <Text className="font-semibold text-2xl text-gray-900">Insights</Text>
+
+          {/* Real Calendar Button */}
+          <TouchableOpacity
+            onPress={showDatePicker}
+            activeOpacity={0.7}
+            className="flex flex-row items-center justify-center gap-3 bg-white px-5 py-3 rounded-[12px] border border-gray-200 shadow-sm"
+          >
+            <Text className="text-sm font-medium text-gray-700">{displayText}</Text>
             <Ionicons name="calendar-clear-outline" size={20} color="#919b94" />
-          </View>
+          </TouchableOpacity>
+
+          {/* Native Date Picker */}
+          {showPicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={onChange}
+              maximumDate={new Date()} // Future date block
+              locale="en-US"
+              themeVariant="light"
+            />
+          )}
         </View>
 
         {/* this is for trading char */}
@@ -54,12 +108,12 @@ const Insights = () => {
           style={{ backgroundColor: "#fefffe", borderRadius: 16 }}
           className="p-4"
         >
-          <BudgetTrendChart />
+          <BudgetTrendChart data={budgetTrends} />
         </View>
 
         {/* this is for Spending by Category */}
         <View>
-          <SpendingChart />
+          <SpendingChart data={spendingData?.categories} />
         </View>
 
         {/* this is for top expensess list */}
@@ -69,7 +123,7 @@ const Insights = () => {
 
         {/* this is for DailySpendingChart */}
         <View>
-          <DailySpendingChart />
+          <DailySpendingChart data={dailySpending} />
         </View>
 
         {/* this is for Projected End-of-Month Balance */}

@@ -1,135 +1,33 @@
-// components/plaid/BankAccountsList.tsx
+// components/plaid/BankAccountsList.tsx  ← EI FILE TA PURA REPLACE KOR
 import { formatCurrency } from '@/utils/format';
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useState } from 'react';
-import { Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { usePlaid } from '../../context/PlaidContext';
 
-export const BankAccountsList: React.FC = () => {
-  const {
-    accounts,
-    isLoading,
-    error,
-    fetchAccounts,
-    removePlaidItem,
-    createUpdateLinkToken,
-    fetchLinkToken,
-    exchangePublicToken,
-    linkToken
-  } = usePlaid();
-  const [refreshing, setRefreshing] = useState(false);
+export const BankAccountsList = () => {
+  const { accounts, isLoading, error, fetchAccounts, connectBank, reconnectBank, removeBank } = usePlaid();
 
-  const handleAddAccount = async () => {
-    try {
-      await fetchLinkToken();
-      const { openLink } = require('react-native-plaid-link-sdk');
+  const onRefresh = () => fetchAccounts();
 
-      openLink({
-        tokenConfig: {
-          token: linkToken,
-          noLoadingState: true,
-        },
-        onSuccess: async (success: any) => {
-          await exchangePublicToken(success.publicToken, success.metadata);
-          await fetchAccounts(); // Refresh the accounts list
-        },
-        onExit: (exit: any) => {
-          console.log('Plaid Link exit:', exit);
-        },
-      });
-    } catch (error) {
-      console.error('Error adding account:', error);
-      Alert.alert('Error', 'Failed to connect bank account. Please try again.');
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await fetchAccounts();
-    } catch (error) {
-      console.error('Error refreshing accounts:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const handleRemoveAccount = async (itemId: string, institutionName: string) => {
-    Alert.alert(
-      'Remove Account',
-      `Are you sure you want to remove ${institutionName}?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await removePlaidItem(itemId);
-              Alert.alert('Success', 'Account removed successfully');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to remove account. Please try again.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleUpdateAccount = async (itemId: string) => {
-    try {
-      const linkToken = await createUpdateLinkToken(itemId);
-      const { openLink } = require('react-native-plaid-link-sdk');
-
-      openLink({
-        tokenConfig: {
-          token: linkToken,
-          noLoadingState: true,
-        },
-        onSuccess: async () => {
-          await fetchAccounts();
-        },
-        onExit: (exit: any) => {
-          console.log('Plaid Link exit:', exit);
-        },
-      });
-    } catch (error) {
-      console.error('Error updating account:', error);
-      Alert.alert('Error', 'Failed to update account. Please try again.');
-    }
-  };
-
-  const renderAccount = ({ item }: { item: any }) => (
-    <View style={styles.accountCard}>
-      <View style={styles.accountHeader}>
-        <View style={styles.accountIcon}>
-          <MaterialIcons name="account-balance" size={24} color="#4A90E2" />
+  const renderItem = ({ item }: any) => (
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <View style={styles.icon}>
+          <MaterialIcons name="account-balance" size={28} color="#4A90E2" />
         </View>
-        <View style={styles.accountInfo}>
-          <Text style={styles.accountName}>{item.institution_name || 'Bank Account'}</Text>
-          <Text style={styles.accountType}>{item.name} •••• {item.mask || ''}</Text>
-          <Text style={styles.accountBalance}>
-            {formatCurrency(item.balances?.current || 0)}
-          </Text>
+        <View style={styles.info}>
+          <Text style={styles.name}>{item.institution_name}</Text>
+          <Text style={styles.type}>{item.name} ••••{item.mask}</Text>
+          <Text style={styles.balance}>{formatCurrency(item.balances.current || 0)}</Text>
         </View>
       </View>
-      <View style={styles.accountActions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleUpdateAccount(item.item_id)}
-          disabled={isLoading}
-        >
-          <MaterialIcons name="edit" size={20} color="#4A90E2" />
+      <View style={styles.actions}>
+        <TouchableOpacity onPress={() => reconnectBank(item.item_id)} disabled={isLoading}>
+          <MaterialIcons name="sync" size={22} color="#4A90E2" />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleRemoveAccount(item.item_id, item.institution_name || 'this account')}
-          disabled={isLoading}
-        >
-          <MaterialIcons name="delete" size={20} color="#E74C3C" />
+        <TouchableOpacity onPress={() => removeBank(item.item_id)} disabled={isLoading}>
+          <MaterialIcons name="delete" size={22} color="#ef4444" />
         </TouchableOpacity>
       </View>
     </View>
@@ -137,175 +35,187 @@ export const BankAccountsList: React.FC = () => {
 
   if (error) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity onPress={fetchAccounts} style={styles.retryButton}>
-          <Text style={styles.retryButtonText}>Try Again</Text>
+      <View style={styles.center}>
+        <Text style={styles.error}>{error}</Text>
+        <TouchableOpacity onPress={fetchAccounts} style={styles.btn}>
+          <Text style={styles.btnText}>Retry</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <FlatList
-        data={accounts}
-        renderItem={renderAccount}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.container}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#4A90E2']}
-            tintColor="#4A90E2"
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.centered}>
-            <Text style={styles.emptyText}>No bank accounts connected</Text>
-            <TouchableOpacity
-              onPress={handleAddAccount}
-              style={styles.addButton}
-              disabled={isLoading}
-            >
-              <Text style={styles.addButtonText}>+ Add Bank Account</Text>
-            </TouchableOpacity>
-          </View>
-        }
-        ListFooterComponent={
-          accounts.length > 0 ? (
-            <TouchableOpacity
-              onPress={handleAddAccount}
-              style={styles.addAnotherButton}
-              disabled={isLoading}
-            >
-              <MaterialIcons name="add" size={20} color="#4A90E2" />
-              <Text style={styles.addAnotherButtonText}>Add Another Account</Text>
-            </TouchableOpacity>
-          ) : null
-        }
-      />
-    </View>
+    <FlatList
+      data={accounts || []}
+      renderItem={renderItem}
+      keyExtractor={(item) => item.id}
+      refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
+      ListEmptyComponent={
+        <View style={styles.center}>
+          <Text style={styles.empty}>No bank accounts connected</Text>
+          <TouchableOpacity onPress={connectBank} style={styles.addBtn}>
+            <Text style={styles.addBtnText}>+ Connect Bank Account</Text>
+          </TouchableOpacity>
+        </View>
+      }
+      ListFooterComponent={
+        accounts?.length > 0 ? (
+          <TouchableOpacity onPress={connectBank} style={styles.footerBtn}>
+            <MaterialIcons name="add" size={20} color="#10b981" />
+            <Text style={styles.footerText}>Add Another Account</Text>
+          </TouchableOpacity>
+        ) : null   // ← null diye dibi, false na!
+      }
+    />
   );
 };
 
+// components/plaid/BankAccountsList.tsx → styles (full copy-paste kor)
+
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-  },
-  accountCard: {
+  // Main card
+  card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 18,
+    marginHorizontal: 16,
+    marginVertical: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
-  accountHeader: {
+
+  // Header (icon + info)
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  accountIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F0F7FF',
+
+  icon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#EBF5FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
-  accountInfo: {
+
+  info: {
     flex: 1,
   },
-  accountName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
+
+  name: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 4,
   },
-  accountType: {
+
+  type: {
     fontSize: 14,
     color: '#666666',
-    marginBottom: 4,
+    marginBottom: 6,
+    fontWeight: '500',
   },
-  accountBalance: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
+
+  balance: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#10b981', // emerald-500
   },
-  accountActions: {
+
+  // Action buttons (Reconnect + Delete)
+  actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 12,
+    marginTop: 16,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    paddingTop: 12,
+    borderTopColor: '#f3f4f6',
+    gap: 20,
   },
-  actionButton: {
-    padding: 8,
-    marginLeft: 12,
-    backgroundColor: '#F5F7FA',
-    borderRadius: 8,
-  },
-  centered: {
+
+  // Empty state
+  center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 32,
   },
-  errorText: {
-    color: '#E74C3C',
-    marginBottom: 16,
+
+  empty: {
+    fontSize: 18,
+    color: '#6b7280',
     textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 26,
   },
-  emptyText: {
-    color: '#999999',
+
+  error: {
     fontSize: 16,
+    color: '#ef4444',
     textAlign: 'center',
     marginBottom: 20,
   },
-  retryButton: {
-    marginTop: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: '#4A90E2',
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  addButton: {
-    marginTop: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    backgroundColor: '#4A90E2',
-    borderRadius: 8,
+
+  // Connect Bank Button (Empty State)
+  addBtn: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 14,
+    flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
   },
-  addButtonText: {
+
+  addBtnText: {
     color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '700',
   },
-  addAnotherButton: {
+
+  // Add Another Account (Footer)
+  footerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#4A90E2',
-    borderRadius: 8,
-    marginTop: 8,
+    paddingVertical: 16,
+    marginHorizontal: 16,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#10b981',
+    borderRadius: 14,
+    backgroundColor: '#f0fdf4',
   },
-  addAnotherButtonText: {
-    color: '#4A90E2',
+
+  footerText: {
+    color: '#10b981',
+    fontWeight: '700',
+    fontSize: 16,
     marginLeft: 8,
-    fontWeight: '600',
+  },
+
+  // Retry button (error state)
+  btn: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+
+  btnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });

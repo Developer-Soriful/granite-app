@@ -1,75 +1,65 @@
-import { Images } from '@/assets'
-import React, { useState } from 'react'
-import { Image, StyleSheet, Text, View } from 'react-native'
+import { Images } from '@/assets';
+import React, { useState } from 'react';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 
-const SpendMoney = () => {
-    // Sample spending data
-    const spendingData = [
-        { id: 1, amount: 20, date: new Date("2025-11-09") },
-        { id: 2, amount: 50, date: new Date("2025-11-08") },
-        { id: 3, amount: 15, date: new Date("2025-11-03") },
-        { id: 4, amount: 30, date: new Date("2025-10-30") },
-        { id: 5, amount: 60, date: new Date("2025-10-01") },
-    ]
+interface SpendMoneyProps {
+    availableSpending: number;
+    totalExpensesThisMonth: number;
+    monthlyBudget: number;
+    isLoading?: boolean;
+}
 
-    // State to track selected filter
-    const [selectedFilter, setSelectedFilter] = useState<'today' | 'week' | 'month'>('today')
+const SpendMoney: React.FC<SpendMoneyProps> = ({
+    availableSpending = 0,
+    totalExpensesThisMonth = 0,
+    monthlyBudget = 3000,
+    isLoading = false,
+}) => {
+    const [selectedFilter, setSelectedFilter] = useState<'today' | 'week' | 'month'>('month');
 
-    // Filter logic
-    const getFilteredSpending = () => {
-        const now = new Date()
+    const getDisplayAmount = () => {
+        if (selectedFilter === 'today') return availableSpending / 30;
+        if (selectedFilter === 'week') return (availableSpending / 30) * 7;
+        return availableSpending;
+    };
 
-        if (selectedFilter === 'today') {
-            return spendingData.filter(
-                (item) =>
-                    item.date.getFullYear() === now.getFullYear() &&
-                    item.date.getMonth() === now.getMonth() &&
-                    item.date.getDate() === now.getDate()
-            )
-        } else if (selectedFilter === 'week') {
-            const startOfWeek = new Date(now)
-            startOfWeek.setDate(now.getDate() - now.getDay()) // Sunday as start of week
-            return spendingData.filter((item) => item.date >= startOfWeek)
-        } else if (selectedFilter === 'month') {
-            return spendingData.filter(
-                (item) =>
-                    item.date.getFullYear() === now.getFullYear() &&
-                    item.date.getMonth() === now.getMonth()
-            )
-        }
-
-        return []
+    if (isLoading) {
+        return (
+            <View style={styles.container}>
+                <ActivityIndicator size="small" color="#338059" />
+            </View>
+        );
     }
-
-    const totalSpending = getFilteredSpending().reduce((acc, item) => acc + item.amount, 0)
 
     return (
         <View style={styles.container}>
-            <Text className='' style={styles.title}>How Much Can I Spend?</Text>
+            <Text style={styles.title}>How Much Can I Spend?</Text>
 
             <View style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
                 <View style={styles.dayWeekMonthContainer}>
                     {['today', 'week', 'month'].map((filter) => {
-                        const label =
-                            filter === 'today' ? 'Today' : filter === 'week' ? 'This Week' : 'This Month'
-                        const isActive = selectedFilter === filter
+                        const label = filter === 'today' ? 'Today' : filter === 'week' ? 'This Week' : 'This Month';
+                        const isActive = selectedFilter === filter;
                         return (
                             <Text
                                 key={filter}
-                                className={`font-sans-condensed font-semibold px-4 py-2 ${isActive ? 'rounded-[8px] bg-[#e7f4ee] text-[#4c8167]' : 'text-[#68716c]'}`}
                                 onPress={() => setSelectedFilter(filter as any)}
+                                className={`font-sans-condensed font-semibold px-4 py-2 ${isActive ? 'rounded-[8px] bg-[#e7f4ee] text-[#4c8167]' : 'text-[#68716c]'}`}
                             >
                                 {label}
                             </Text>
-                        )
+                        );
                     })}
                 </View>
 
-                {/* Money Container */}
                 <View style={styles.moneyContainer}>
                     <View>
-                        <Text style={styles.moneyText}>${totalSpending.toFixed(2)}</Text>
-                        <Text style={{ fontSize: 14, color: '#000' }}>Available Spending</Text>
+                        <Text style={styles.moneyText}>
+                            ${getDisplayAmount().toFixed(2)}
+                        </Text>
+                        <Text style={{ fontSize: 14, color: '#000' }}>
+                            Available Spending
+                        </Text>
                     </View>
                     <View
                         style={{
@@ -85,12 +75,13 @@ const SpendMoney = () => {
                     </View>
                 </View>
             </View>
-        </View >
-    )
-}
+        </View>
+    );
+};
 
-export default SpendMoney
+export default SpendMoney;
 
+// Tor original style — kono line o change kori nai
 const styles = StyleSheet.create({
     container: {
         display: 'flex',
@@ -140,4 +131,4 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: 'rgba(77, 128, 102, 1)',
     },
-})
+});

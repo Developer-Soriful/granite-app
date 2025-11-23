@@ -1,6 +1,5 @@
 import supabase from "@/config/supabase.config";
 import { EmailOtpType } from '@supabase/supabase-js';
-import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
 /**
@@ -85,19 +84,19 @@ export async function signIn(email: string, password: string) {
 
 export async function signInWithOAuth(provider: 'google' | 'apple') {
     try {
-        await WebBrowser.warmUpAsync();
+        const isDev = __DEV__;
+        const redirectTo = isDev
+            ? 'exp://https://www.granitefinance.io/auth-callback' 
+            : 'granite://auth/callback';
 
-        // Create a deep link that will be used after OAuth completes
-        const redirectUrl = Linking.createURL('auth-callback');
-
-        console.log('Starting OAuth flow for:', provider);
-        console.log('Redirect URL:', redirectUrl);
+        console.log('Starting OAuth for:', provider);
+        console.log('Redirect URL:', redirectTo);
 
         const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: provider,
+            provider,
             options: {
-                redirectTo: redirectUrl,
-                skipBrowserRedirect: false,
+                redirectTo,
+                skipBrowserRedirect: false, 
                 queryParams: {
                     access_type: 'offline',
                     prompt: 'consent',
@@ -106,46 +105,21 @@ export async function signInWithOAuth(provider: 'google' | 'apple') {
         });
 
         if (error) throw error;
-        if (!data?.url) throw new Error('No URL returned from OAuth provider');
 
-        console.log('Opening browser for OAuth flow...');
-
-        // Open the OAuth URL in the in-app browser
-        const result = await WebBrowser.openAuthSessionAsync(
-            data.url,
-            redirectUrl,
-            {
-                showInRecents: true,
-                preferEphemeralSession: false,
-            }
-        );
-
-        // Handle the result from the in-app browser
-        if (result.type === 'success' && 'url' in result && result.url) {
-            const url = result.url;
-            const params = new URLSearchParams(url.split('#')[1] || url.split('?')[1] || '');
-            const accessToken = params.get('access_token');
-            const refreshToken = params.get('refresh_token');
-
-            if (accessToken && refreshToken) {
-                // Set the session with the new tokens
-                const { data: sessionData, error: sessionError } =
-                    await supabase.auth.setSession({
-                        access_token: accessToken,
-                        refresh_token: refreshToken,
-                    });
-
-                if (sessionError) throw sessionError;
-                return { session: sessionData.session, user: sessionData.user };
-            }
+        // If we have a URL, it means we need to handle the redirect manually
+        if (data?.url) {
+            // This will open the URL in the system browser
+            // The browser will redirect back to the app after auth
+            await WebBrowser.openAuthSessionAsync(
+                data.url,
+                redirectTo
+            );
         }
 
-        throw new Error('Authentication failed or was cancelled');
-    } catch (error) {
-        console.error(`OAuth Error with ${provider}:`, error);
+        return { success: true };
+    } catch (error: any) {
+        console.error(`OAuth Error (${provider}):`, error.message);
         throw error;
-    } finally {
-        await WebBrowser.coolDownAsync();
     }
 }
 

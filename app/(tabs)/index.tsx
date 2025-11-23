@@ -4,10 +4,20 @@ import RecentTransactionsHistory from "@/components/RecentTransactionsHistory";
 import SpendingInsights from "@/components/SpendingInsights";
 import SpendMoney from "@/components/SpendMoney";
 import TransactionsOverview from "@/components/TransactionsOverview";
+import { useRecentTransactions } from "@/hooks/useTransactions";
+import { InsightsApi } from "@/services/ApiService";
+import { useQuery } from "@tanstack/react-query";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 function Dashboard() {
+  const { data: transactions = [], isLoading: isLoadingTransactions } = useRecentTransactions();
 
+  const { data: spendingData, isLoading: isLoadingSpending } = useQuery({
+    queryKey: ['spending', 'overview'],
+    queryFn: () => InsightsApi.getSpendingByCategory(
+      new Date().toISOString().slice(0, 7)
+    ).then(res => res.data),
+  });
   return (
     <View style={styles.dailyBudgetContainer}>
       <View
@@ -38,7 +48,11 @@ function Dashboard() {
         showsVerticalScrollIndicator={false}
       >
         {/* How Much Can I Spend? section */}
-        <SpendMoney />
+        <SpendMoney
+          balance={spendingData?.currentBalance}
+          expenses={spendingData?.totalExpenses}
+        />
+
 
         {/* Forecast Future Daily Budget section */}
         <View
@@ -60,7 +74,10 @@ function Dashboard() {
         </View>
         {/* this is for Recent Transactions History */}
         <View>
-          <RecentTransactionsHistory />
+          <RecentTransactionsHistory
+            transactions={transactions}
+            isLoading={isLoadingTransactions}
+          />
         </View>
       </ScrollView>
     </View>
