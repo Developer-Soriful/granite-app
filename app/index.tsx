@@ -1,4 +1,3 @@
-
 import { Images } from '@/assets';
 import AnimatedDigit from '@/components/AnimatedDigit';
 import Contact from '@/components/Contact';
@@ -8,7 +7,7 @@ import HomeHeader from '@/components/HomeHeader';
 import HowItWork from '@/components/HowItWork';
 import Testimonial from '@/components/Testimonial';
 import { useAuth } from "@/context/AuthContext";
-import { SectionRefs } from '@/types/navigation';
+import { SectionRefs } from '@/services/types/navigation';
 import Button from '@/ui/Button';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -16,17 +15,17 @@ import { StatusBar } from "expo-status-bar";
 import React, { LegacyRef, useEffect, useRef, useState } from 'react';
 import {
     Image,
-    ImageBackground,
-    NativeScrollEvent,
+    ImageBackground, LogBox, NativeScrollEvent,
     NativeSyntheticEvent,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import 'react-native-url-polyfill/auto';
+LogBox.ignoreLogs(['Require cycle:']);
 
 const HomePage = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -126,7 +125,7 @@ const HomePage = () => {
                                         <Image source={Images.header_img} />
                                         <Text className='text-xl font-bold'>Grantie</Text>
                                     </View>
-                                    <View className='flex flex-col gap-4 justify-center items-center w-full px-6'>
+                                    <View className='flex flex-col gap-4 justify-center items-center w-full px'>
                                         <Text className='font-bold text-xl'>How Much Can I Spend?</Text>
                                         <View className='flex flex-row items-center justify-center gap-3 w-full'>
                                             <Text className='font-bold text-[12px] px-3 py-1  text-[#434d48] rounded-[8px]' style={{
@@ -142,7 +141,7 @@ const HomePage = () => {
                                                 borderWidth: 1
                                             }}>This Month</Text>
                                         </View>
-                                        <View className='w-full rounded-[16px] flex flex-col justify-center items-center gap-1 w-full' style={{
+                                        <View className='w-[75%] rounded-[16px] flex flex-col justify-center items-center gap-1' style={{
                                             backgroundColor: "#e9f2ee",
                                             borderColor: "#8fc0a91a",
                                             borderWidth: 1,
@@ -313,8 +312,6 @@ const HomePage = () => {
                             <View>
                                 <Contact />
                             </View>
-                            {/* ADDED A SMALL MARGIN/PADDING AT THE VERY BOTTOM OF THE SCROLLVIEW CONTENT */}
-                            {/* This ensures the very last item isn't immediately cut off by the screen edge */}
                             <View style={{ height: 20 }} />
                         </View>
                     </View >

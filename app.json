@@ -9,6 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "plaid"
+        ]
+      },
       "supportsTablet": true,
       "bundleIdentifier": "com.granite.app",
       "associatedDomains": [

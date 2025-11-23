@@ -7,17 +7,15 @@ import { View } from 'react-native';
 export default function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     const { buildHref } = useLinkBuilder();
 
-    // Move icon object outside the map function
+
     const icon = {
-        index: (props: any) => <MaterialCommunityIcons
-            name="view-dashboard-outline"
-            size={24}
-            {...props}
-        />,
+        index: (props: any) => <MaterialCommunityIcons name="view-dashboard-outline" size={24} {...props} />,
         calendar: (props: any) => <Ionicons name="calendar-clear-outline" size={24} {...props} />,
         insights: (props: any) => <MaterialCommunityIcons name="finance" size={24} {...props} />,
-        settings: (props: any) => <MaterialCommunityIcons name="cog-outline" size={24} {...props} />
+        settings: (props: any) => <MaterialCommunityIcons name="cog-outline" size={24} {...props} />,
+        bank: (props: any) => <MaterialCommunityIcons name="bank-outline" size={24} {...props} />
     }
+
 
     return (
         <View className='w-full flex justify-center items-center p-2 h-[70px] bg-white rounded-tl-[16px] rounded-tr-[16px] border-[#dfe4e3] border-t-[2px] border-l-[1px] border-r-[1px]' style={{ flexDirection: 'row' }}>
@@ -33,7 +31,9 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
                             ? options.title
                             : route.name;
 
+
                 const isFocused = state.index === index;
+
 
                 const onPress = () => {
                     const event = navigation.emit({
@@ -42,10 +42,12 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
                         canPreventDefault: true,
                     });
 
+
                     if (!isFocused && !event.defaultPrevented) {
                         navigation.navigate(route.name, route.params);
                     }
                 };
+
 
                 const onLongPress = () => {
                     navigation.emit({
@@ -54,8 +56,9 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
                     });
                 };
 
-                // Get the icon component
-                const IconComponent = icon[route.name as keyof typeof icon];
+
+                const IconComponent = icon[route.name as keyof typeof icon] || (() => null);
+
 
                 return (
                     <PlatformPressable

@@ -1,4 +1,5 @@
 import HomeHeader from "@/components/HomeHeader";
+import { signInWithOAuth, signUp } from "@/hooks/useAuthActions";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -10,7 +11,6 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 // REAL Supabase Auth Imports
-import { signInWithOAuth, signUp } from '../../hooks/useAuthActions';
 
 // --- ICON COMPONENTS ---
 

@@ -1,10 +1,18 @@
+import supabase from "@/config/supabase.config";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { Redirect, Slot, Stack, useRouter, useSegments } from "expo-router";
+import { PlaidProvider } from "@/context/PlaidContext";
+import * as Linking from "expo-linking";
+import { Slot, useRouter, useSegments } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from 'react';
-import { BackHandler, Text, View } from "react-native";
+import { BackHandler, View } from "react-native";
+import { ActivityIndicator } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import "./global.css";
 
+/* -----------------------------
+      APP ROUTES LOGIC
+------------------------------ */
 function AppRoutes() {
   const { session, isLoading, hasCompletedPaywall } = useAuth();
   const router = useRouter();
@@ -15,59 +23,56 @@ function AppRoutes() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inTabsGroup = segments[0] === '(tabs)';
-    const inSettingsGroup = segments[0] === 'settings';
 
     if (!session) {
-      // If no session and not in auth group, redirect to auth
+      // If no session and not in auth group, go to auth
       if (!inAuthGroup) {
-        router.replace('/');
+        router.replace('/(auth)');
       }
-    } else {
-      // If has session but not completed paywall, redirect to paywall
-      if (!hasCompletedPaywall) {
-        if (segments[0] !== 'paywall') {
-          router.replace('/paywall');
-        }
-      }
-      // If in auth group but has session, redirect to tabs
-      else if (inAuthGroup) {
-        router.replace('/(tabs)');
-      }
+    } else if (inAuthGroup && hasCompletedPaywall) {
+      // If has session and in auth group, go to tabs
+      router.replace('/(tabs)');
     }
-  }, [session, segments, isLoading, hasCompletedPaywall]);
+  }, [session, segments, isLoading]);
 
-  // Show loading indicator only for a very short time
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Loading...</Text>
+        <ActivityIndicator size="large" />
       </View>
     );
   }
 
-  // If no session, redirect to auth screen
-  if (!session) {
-    return (
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Redirect href="/" />
-      </Stack>
-    );
-  }
-
-  // If session exists, show the main app
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Slot />
-    </Stack>
-  );
+  return <Slot />;
 }
-
+/* -----------------------------
+        ROOT LAYOUT
+------------------------------ */
 export default function RootLayout() {
   const router = useRouter();
 
+  // SUPABASE OAUTH DEEP LINK HANDLER
+  useEffect(() => {
+    const subscription = Linking.addEventListener("url", async ({ url }) => {
+      console.log("🔗 OAuth Redirect URL:", url);
+
+      const { data, error } = await supabase.auth.exchangeCodeForSession(url);
+
+      if (error) {
+        console.log("❌ OAuth Session Exchange Error:", error.message);
+        return;
+      }
+
+      if (data?.session) {
+        console.log("✅ OAuth Login Success → Redirecting to Tabs");
+        router.replace("/(tabs)");
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  // Android Back Button Handler
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
@@ -85,11 +90,14 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
-          <View style={{ flex: 1 }}>
-            <AppRoutes />
-          </View>
-        </SafeAreaView>
+        <PlaidProvider>
+          <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
+            <StatusBar style="dark" />
+            <View style={{ flex: 1 }}>
+              <AppRoutes />
+            </View>
+          </SafeAreaView>
+        </PlaidProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

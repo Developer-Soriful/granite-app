@@ -1,5 +1,5 @@
 import { Images } from '@/assets';
-import { SectionRefs } from '@/types/navigation';
+import { SectionRefs } from '@/services/types/navigation';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -98,7 +98,7 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
     };
 
     const handleBackHome = () => {
-        router.push("/")
+        router.replace("/")
     }
 
     return (

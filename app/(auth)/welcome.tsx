@@ -52,12 +52,12 @@ export default function WelcomePage() {
 
                     {/* Alternative using Link component */}
                     {/* <Link href="/(auth)/priming" asChild>
-            <TouchableOpacity className="px-6 py-4 bg-[#66BB6A] rounded-2xl shadow-lg">
-              <Text className="text-white font-semibold text-center text-base">
-                Get Started
-              </Text>
-            </TouchableOpacity>
-          </Link> */}
+                <TouchableOpacity className="px-6 py-4 bg-[#66BB6A] rounded-2xl shadow-lg">
+                <Text className="text-white font-semibold text-center text-base">
+                    Get Started
+                </Text>
+                </TouchableOpacity>
+            </Link> */}
                 </View>
             </View>
         </View>

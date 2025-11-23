@@ -96,6 +96,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     if (!isMounted) return;
                     console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
                     setSession(session);
+
+                    // Handle redirect after successful authentication
+                    if (session && (event === 'SIGNED_IN')) {
+                        // Redirect to welcome page after successful login
+                        console.log('Redirecting to welcome page...');
+                        router.replace('/welcome');
+                    }
                 });
 
             } catch (error) {

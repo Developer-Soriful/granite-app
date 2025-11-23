@@ -1,31 +1,40 @@
-// app/(auth)/_layout.tsx
-
 import { useAuth } from '@/context/AuthContext';
-import { Redirect, Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 
 export default function AuthLayout() {
     const { session, isLoading } = useAuth();
+    const router = useRouter();
 
     if (isLoading) {
         return null;
     }
 
-    // If there's a session, redirect to the main app
-    if (session) {
-        return <Redirect href="/(tabs)" />;
-    }
-
-    // If no session, show the auth stack with signup as the initial route
+    // Show auth screens
     return (
-        <Stack 
-            screenOptions={{ 
+        <Stack
+            screenOptions={{
                 headerShown: false,
                 animation: 'fade',
             }}
-            initialRouteName="signup"
+            screenListeners={{
+                state: () => ({
+                    // This prevents the back button from going back to the welcome screen after login
+                    beforeRemove: (e: any) => {
+                        if (session && e.data.action.type === 'GO_BACK') {
+                            e.preventDefault();
+                            router.replace('/(tabs)');
+                        }
+                    },
+                }),
+            }}
         >
-            <Stack.Screen name="signup" options={{ headerShown: false }} />
-            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="index" />
+            <Stack.Screen name="welcome" />
+            <Stack.Screen name="signup" />
+            <Stack.Screen name="forget-password" />
+            <Stack.Screen name="verify" />
+            <Stack.Screen name="resetpass" />
+            <Stack.Screen name="verify-reset-password" />
         </Stack>
     );
 }

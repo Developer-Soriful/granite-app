@@ -1,4 +1,5 @@
 import HomeHeader from "@/components/HomeHeader";
+import { signIn, signInWithOAuth } from "@/hooks/useAuthActions";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -12,7 +13,6 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 // 1. Import real authentication functions
-import { signIn, signInWithOAuth } from '../../hooks/useAuthActions';
 
 // Google Icon Component
 const GoogleIcon = () => (
@@ -97,7 +97,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // 3. INTEGRATE REAL EMAIL LOGIN FUNCTION
+  // Handle email/password login
   const handleEmailLogin = async () => {
     if (!email || !password) {
       setMessage("Please fill in all fields");
@@ -108,55 +108,38 @@ export default function LoginScreen() {
     setMessage("");
 
     try {
-      await signIn(email, password);
-      // If successful, the user is logged in. 
-      // Navigation should ideally be handled by the Auth Listener, 
-      // but for immediate feedback on email/password, we navigate here.
-      setMessage("Login successful!");
-      router.replace("/");
+      const { success } = await signIn(email, password);
+      // The AuthContext will handle the redirect to /welcome on successful login
+      router.replace('/welcome');
+      if (!success) {
+        setMessage("Login failed. Please try again.");
+      }
     } catch (error: any) {
-      // Error is caught from the 'signIn' function
       setMessage(error.message || "Login failed. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
 
-  // 4. INTEGRATE REAL GOOGLE LOGIN (OAuth) FUNCTION
-  const handleGoogleLogin = async () => {
+  // Handle OAuth login (Google/Apple)
+  const handleOAuthLogin = async (provider: 'google' | 'apple') => {
     setLoading(true);
     setMessage("");
+    
     try {
-      await signInWithOAuth('google');
-      // OAuth success opens the browser. 
-      // The success message and navigation (router.replace) 
-      // MUST happen in the useSupabaseAuthListener when the user returns.
-      // We set the message here only for feedback if the browser fails to open.
-      setMessage("Redirecting to Google...");
+      // This will open the browser for OAuth flow
+      // The AuthContext will handle the redirect when the user returns
+      await signInWithOAuth(provider);
     } catch (error: any) {
-      setMessage(error.message || "Google login failed.");
-    } finally {
-      // Do NOT set loading to false immediately, as the browser is opening.
-      // Instead, reset it if an immediate error occurs.
+      setMessage(error.message || `${provider} login failed.`);
       setLoading(false);
     }
   };
 
-  // 5. INTEGRATE REAL APPLE LOGIN (OAuth) FUNCTION
-  const handleAppleLogin = async () => {
-    setLoading(true);
-    setMessage("");
-    try {
-      await signInWithOAuth('apple');
-      // OAuth success opens the browser. Navigation must be handled by the Auth Listener.
-      setMessage("Redirecting to Apple...");
-    } catch (error: any) {
-      setMessage(error.message || "Apple login failed.");
-    } finally {
-      // Do NOT set loading to false immediately.
-      setLoading(false);
-    }
-  };
+  // Google login handler
+  const handleGoogleLogin = () => handleOAuthLogin('google');
+  
+  // Apple login handler
+  const handleAppleLogin = () => handleOAuthLogin('apple');
 
   const isError =
     message &&

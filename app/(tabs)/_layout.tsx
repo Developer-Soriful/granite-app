@@ -67,6 +67,15 @@ export default function TabLayout() {
                         tabBarButton: () => null,
                     }}
                 />
+                <Tabs.Screen
+                    name="bank/index"
+                    options={{
+                        title: 'Accounts',
+                        tabBarIcon: ({ color }) => (
+                            <MaterialCommunityIcons name="bank-outline" size={24} color={color} />
+                        ),
+                    }}
+                />
             </Tabs>
         </View>
     );

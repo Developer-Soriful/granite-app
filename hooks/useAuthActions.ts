@@ -70,122 +70,82 @@ export async function signUp(email: string, password: string) {
 // ---------------------------------
 
 export async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
     });
 
     if (error) {
-        console.error('Sign-in Error:', error.message);
+        console.error('Sign in error:', error.message);
         throw new Error(error.message);
     }
+
+    return { success: true, session: data.session };
 }
 
 export async function signInWithOAuth(provider: 'google' | 'apple') {
     try {
-        // Warm up the browser
         await WebBrowser.warmUpAsync();
 
-        // Get the redirect URL for the auth callback
-        // This must match the scheme defined in app.json (granite://) or exp:// for Expo Go
+        // Create a deep link that will be used after OAuth completes
         const redirectUrl = Linking.createURL('auth-callback');
 
         console.log('Starting OAuth flow for:', provider);
         console.log('Redirect URL:', redirectUrl);
 
-        // Start the OAuth flow
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: provider,
             options: {
                 redirectTo: redirectUrl,
-                skipBrowserRedirect: true,
+                skipBrowserRedirect: false,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                },
             },
         });
 
-        if (error) {
-            console.error('OAuth initialization error:', error);
-            throw error;
-        }
-
-        if (!data?.url) {
-            throw new Error('No authentication URL returned');
-        }
+        if (error) throw error;
+        if (!data?.url) throw new Error('No URL returned from OAuth provider');
 
         console.log('Opening browser for OAuth flow...');
 
-        // Open the OAuth URL in the browser
+        // Open the OAuth URL in the in-app browser
         const result = await WebBrowser.openAuthSessionAsync(
             data.url,
             redirectUrl,
             {
                 showInRecents: true,
-                // preferEphemeralSession: true, // Try true for iOS if false fails, but false is usually better for persistent auth
+                preferEphemeralSession: false,
             }
         );
 
-        // Cool down the browser
-        await WebBrowser.coolDownAsync();
-
-        console.log('OAuth result type:', result.type);
-
-        if (result.type === 'success' && result.url) {
-            // Parse the URL to extract the access token
-            // The URL will look like: granite://auth/callback#access_token=...&refresh_token=...&...
-
-            const urlStr = result.url;
-            console.log('Redirect URL received:', urlStr);
-
-            // Extract the hash part or query part
-            const hashIndex = urlStr.indexOf('#');
-            const queryIndex = urlStr.indexOf('?');
-
-            let paramsStr = '';
-            if (hashIndex !== -1) {
-                paramsStr = urlStr.substring(hashIndex + 1);
-            } else if (queryIndex !== -1) {
-                paramsStr = urlStr.substring(queryIndex + 1);
-            }
-
-            if (!paramsStr) {
-                console.error('No parameters found in redirect URL');
-                throw new Error('Authentication failed: No tokens found');
-            }
-
-            // Parse parameters
-            const params = new URLSearchParams(paramsStr);
+        // Handle the result from the in-app browser
+        if (result.type === 'success' && 'url' in result && result.url) {
+            const url = result.url;
+            const params = new URLSearchParams(url.split('#')[1] || url.split('?')[1] || '');
             const accessToken = params.get('access_token');
             const refreshToken = params.get('refresh_token');
 
             if (accessToken && refreshToken) {
-                console.log('Tokens found, setting session...');
-                const { error: sessionError } = await supabase.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken,
-                });
+                // Set the session with the new tokens
+                const { data: sessionData, error: sessionError } =
+                    await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken,
+                    });
 
-                if (sessionError) {
-                    console.error('Error setting session:', sessionError);
-                    throw sessionError;
-                }
-
-            } else {
-                console.error('Missing tokens in redirect URL');
-                throw new Error('Authentication failed: Missing tokens');
+                if (sessionError) throw sessionError;
+                return { session: sessionData.session, user: sessionData.user };
             }
         }
 
-        // Handle cancellation
-        if (result.type === 'cancel' || result.type === 'dismiss') {
-            throw new Error('Authentication was cancelled');
-        }
-
-        // Handle other failures
-        console.error('OAuth flow did not complete successfully:', result.type);
         throw new Error('Authentication failed or was cancelled');
-
     } catch (error) {
-        console.error(`OAuth Sign-in Error with ${provider}:`, error);
+        console.error(`OAuth Error with ${provider}:`, error);
         throw error;
+    } finally {
+        await WebBrowser.coolDownAsync();
     }
 }
 
