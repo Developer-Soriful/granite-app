@@ -5,7 +5,7 @@ export default {
     config: {
         screens: {
             // Handle OAuth callbacks
-            'auth-callback': {
+            '(app)/auth-callback': {
                 path: 'auth/callback',
                 parse: {
                     access_token: (access_token: string) => access_token,

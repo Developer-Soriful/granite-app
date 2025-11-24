@@ -260,7 +260,7 @@ export default function SubscriptionComponent({ subscription, config }: Subscrip
                         {isExpired ? (
                             <Button
                                 mode="contained"
-                                onPress={() => Linking.openURL('/paywall')}
+                                onPress={() => Linking.openURL('/(app)/paywall')}
                                 className="mt-6 bg-blue-600"
                             >
                                 Subscribe Again
@@ -331,7 +331,7 @@ export default function SubscriptionComponent({ subscription, config }: Subscrip
                         {isExpired && (
                             <Text className="text-sm text-red-500 mt-4">
                                 Your previous plan ended on {renewalDate}.{' '}
-                                <Pressable onPress={() => Linking.openURL('/paywall')}>
+                                <Pressable onPress={() => Linking.openURL('/(app)/paywall')}>
                                     <Text className="text-blue-600 underline">Subscribe again</Text>
                                 </Pressable> to regain access.
                             </Text>

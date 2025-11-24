@@ -1,15 +1,17 @@
+// contexts/AuthContext.tsx or app/AuthProvider.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session } from '@supabase/supabase-js';
-import { router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import supabase from '../config/supabase.config';
 
+SplashScreen.preventAutoHideAsync();
+
 interface AuthContextType {
     session: Session | null;
     isLoading: boolean;
-    logout: () => Promise<boolean>;
-    hasCompletedPaywall: boolean | null;
+    logout: () => Promise<void>;
+    hasCompletedPaywall: boolean;
     completePaywall: () => Promise<void>;
 }
 
@@ -18,124 +20,72 @@ const PAYWALL_KEY = '@paywall_completed';
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
+    if (!context) throw new Error('useAuth must be used within AuthProvider');
     return context;
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [hasCompletedPaywall, setHasCompletedPaywall] = useState<boolean | null>(null);
+    const [hasCompletedPaywall, setHasCompletedPaywall] = useState<boolean>(false);
 
-    // Load paywall status from AsyncStorage on mount
+    // Load paywall status
     useEffect(() => {
-        const loadPaywallStatus = async () => {
-            try {
-                const value = await AsyncStorage.getItem(PAYWALL_KEY);
-                if (value !== null) {
-                    setHasCompletedPaywall(value === 'true');
-                } else {
-                    setHasCompletedPaywall(false);
-                }
-            } catch (error) {
-                console.error('Error loading paywall status:', error);
-                setHasCompletedPaywall(false);
-            }
-        };
-        loadPaywallStatus();
+        AsyncStorage.getItem(PAYWALL_KEY).then(value => {
+            setHasCompletedPaywall(value === 'true');
+        }).catch(() => setHasCompletedPaywall(false));
     }, []);
 
-    // Complete the paywall and save to AsyncStorage
     const completePaywall = async () => {
-        try {
-            await AsyncStorage.setItem(PAYWALL_KEY, 'true');
-            setHasCompletedPaywall(true);
-        } catch (error) {
-            console.error('Error saving paywall status:', error);
-            throw error;
-        }
+        await AsyncStorage.setItem(PAYWALL_KEY, 'true');
+        setHasCompletedPaywall(true);
     };
 
     const logout = async () => {
-        console.log("Attempting Supabase sign out...");
-        try {
-            const { error } = await supabase.auth.signOut();
-            setSession(null);
-
-            if (error) {
-                console.error('Logout Error:', error);
-                throw error;
-            }
-
-            console.log("Supabase sign out successful!");
-            router.replace('/(auth)');
-            return true;
-        } catch (error) {
-            console.error('Logout failed:', error);
-            setSession(null);
-            throw error;
-        }
+        await supabase.auth.signOut();
+        setSession(null);
+        // Don't navigate here — let layout handle it
     };
 
     useEffect(() => {
-        let isMounted = true;
-        let authListener: { data: { subscription: { unsubscribe: () => void } } } | null = null;
-        let timer: NodeJS.Timeout | null = null;
+        let mounted = true;
+        let unsub: () => void = () => { };
 
-        const initializeAuth = async () => {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
+        const init = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (mounted) setSession(session);
 
-                if (!isMounted) return;
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                if (mounted) setSession(session);
+            });
 
-                setSession(session);
+            unsub = () => subscription.unsubscribe();
 
-                authListener = supabase.auth.onAuthStateChange((event, session) => {
-                    if (!isMounted) return;
-                    console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
-                    setSession(session);
-
-                    // Handle redirect after successful authentication
-                    if (session && (event === 'SIGNED_IN')) {
-                        // Redirect to welcome page after successful login
-                        console.log('Redirecting to welcome page...');
-                        router.replace('/welcome');
-                    }
-                });
-
-            } catch (error) {
-                console.error('Auth initialization error:', error);
-                if (isMounted) {
-                    setSession(null);
+            // Small delay to prevent flashing
+            setTimeout(() => {
+                if (mounted) {
+                    setIsLoading(false);
+                    SplashScreen.hideAsync();
                 }
-            } finally {
-                timer = setTimeout(() => {
-                    if (isMounted) {
-                        setIsLoading(false);
-                        SplashScreen.hideAsync().catch(console.warn);
-                    }
-                }, 300);
-            }
+            }, 100);
         };
 
-        SplashScreen.preventAutoHideAsync();
-        initializeAuth();
+        init();
 
         return () => {
-            isMounted = false;
-            if (authListener?.data?.subscription?.unsubscribe) {
-                authListener.data.subscription.unsubscribe();
-            }
-            if (timer) {
-                clearTimeout(timer);
-            }
+            mounted = false;
+            unsub();
         };
     }, []);
 
     return (
-        <AuthContext.Provider value={{ session, isLoading, logout, hasCompletedPaywall, completePaywall }}>
+        <AuthContext.Provider value={{
+            session,
+            isLoading,
+            logout,
+            hasCompletedPaywall,
+            completePaywall
+        }}>
             {children}
         </AuthContext.Provider>
     );

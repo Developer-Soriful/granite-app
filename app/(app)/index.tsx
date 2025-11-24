@@ -141,7 +141,7 @@ const HomePage = () => {
                                                 borderWidth: 1
                                             }}>This Month</Text>
                                         </View>
-                                        <View className='w-[75%] rounded-[16px] flex flex-col justify-center items-center gap-1' style={{
+                                        <View className='w-[90%] rounded-[16px] flex flex-col justify-center items-center gap-1' style={{
                                             backgroundColor: "#e9f2ee",
                                             borderColor: "#8fc0a91a",
                                             borderWidth: 1,

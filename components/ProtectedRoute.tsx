@@ -35,7 +35,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
     // If user is signed in but hasn't completed paywall and not on paywall page
     if (session && !hasCompletedPaywall && !inPaywall) {
-        return <Redirect href="/paywall" />;
+        return <Redirect href="/(app)/paywall" />;
     }
 
     // If user is signed in and has completed paywall but is on auth or paywall page

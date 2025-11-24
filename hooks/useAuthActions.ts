@@ -5,6 +5,7 @@ import * as WebBrowser from 'expo-web-browser';
 /**
  * Verifies the OTP (token) sent to the user's email or phone.
  */
+
 export async function verifyOtp({ email, token, type }: { email: string; token: string; type: EmailOtpType }) {
     const { data, error } = await supabase.auth.verifyOtp({
         email: email,
@@ -37,25 +38,25 @@ export async function resendOtp({ email, type }: { email: string; type: ResendOt
     }
     return { success: true, message: 'Verification code resent successfully.' };
 }
-// ---------------------------------------------
-
-
+type AuthResponse = {
+    user: any;
+    session: any;
+    error?: Error;
+};
 // --- NEW SIGN UP FUNCTIONALITY ---
-// In hooks/useAuthActions.ts
-export async function signUp(email: string, password: string) {
+export async function signUp(
+    email: string,
+    password: string
+): Promise<AuthResponse> {
     try {
-        // First sign out any existing session
         await supabase.auth.signOut();
 
-        // Sign up with email confirmation
         const { data, error } = await supabase.auth.signUp({
-            email: email,
-            password: password,
+            email,
+            password,
             options: {
-                emailRedirectTo: 'granite://auth/verify',  // Make sure this matches your app's scheme
-                data: {
-                    email_confirm: true
-                }
+                emailRedirectTo: process.env.EXPO_PUBLIC_EMAIL_REDIRECT_URL || 'granite://auth/verify',
+                data: { email_confirm: true }
             }
         });
 
@@ -63,7 +64,11 @@ export async function signUp(email: string, password: string) {
         return { user: data.user, session: data.session };
     } catch (error: any) {
         console.error('Sign-up Error:', error.message);
-        throw error;
+        return {
+            user: null,
+            session: null,
+            error: new Error('Failed to create account. Please try again.')
+        };
     }
 }
 // ---------------------------------
@@ -86,7 +91,7 @@ export async function signInWithOAuth(provider: 'google' | 'apple') {
     try {
         const isDev = __DEV__;
         const redirectTo = isDev
-            ? 'exp://https://www.granitefinance.io/auth-callback' 
+            ? 'exp://https://www.granitefinance.io/(app)/auth-callback'
             : 'granite://auth/callback';
 
         console.log('Starting OAuth for:', provider);
@@ -96,7 +101,7 @@ export async function signInWithOAuth(provider: 'google' | 'apple') {
             provider,
             options: {
                 redirectTo,
-                skipBrowserRedirect: false, 
+                skipBrowserRedirect: false,
                 queryParams: {
                     access_type: 'offline',
                     prompt: 'consent',
