@@ -6,18 +6,28 @@ import SpendMoney from "@/components/SpendMoney";
 import TransactionsOverview from "@/components/TransactionsOverview";
 import { useRecentTransactions } from "@/hooks/useTransactions";
 import { InsightsApi } from "@/services/ApiService";
+import { PlaidService } from "@/services/plaid";
+import { getAuthToken } from "@/utils/auth";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 function Dashboard() {
   const { data: transactions = [], isLoading: isLoadingTransactions } = useRecentTransactions();
-
+  const [logData, setLogData] = useState([])
   const { data: spendingData, isLoading: isLoadingSpending } = useQuery({
     queryKey: ['spending', 'overview'],
     queryFn: () => InsightsApi.getSpendingByCategory(
       new Date().toISOString().slice(0, 7)
-    ).then(res => res.data),
+    ).then(res => setLogData(res.data)),
   });
+  const checkToken = async () => {
+    const token = await getAuthToken();
+    console.log("Current auth token:", token);
+  };
+  checkToken()
+  // console.log(logData);
+  PlaidService.getUpdateLinkToken("123").then(res => res)
   return (
     <View style={styles.dailyBudgetContainer}>
       <View
@@ -49,8 +59,8 @@ function Dashboard() {
       >
         {/* How Much Can I Spend? section */}
         <SpendMoney
-          balance={spendingData?.currentBalance}
-          expenses={spendingData?.totalExpenses}
+          balance={spendingData}
+          expenses={spendingData}
         />
 
 

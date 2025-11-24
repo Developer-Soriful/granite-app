@@ -37,6 +37,7 @@ export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
             });
             if (!res.ok) throw new Error("Failed to load accounts");
             const data = await res.json();
+            console.log(res)
             setAccounts(data.accounts || []);
         } catch (err: any) {
             setError(err.message);

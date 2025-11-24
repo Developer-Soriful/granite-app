@@ -1,4 +1,5 @@
 import supabase from "@/config/supabase.config";
+import { saveAuthToken } from "@/utils/auth";
 import { EmailOtpType } from '@supabase/supabase-js';
 import * as WebBrowser from 'expo-web-browser';
 
@@ -37,11 +38,9 @@ export async function resendOtp({ email, type }: { email: string; type: ResendOt
     }
     return { success: true, message: 'Verification code resent successfully.' };
 }
-// ---------------------------------------------
 
 
 // --- NEW SIGN UP FUNCTIONALITY ---
-// In hooks/useAuthActions.ts
 export async function signUp(email: string, password: string) {
     try {
         // First sign out any existing session
@@ -66,7 +65,6 @@ export async function signUp(email: string, password: string) {
         throw error;
     }
 }
-// ---------------------------------
 
 export async function signIn(email: string, password: string) {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -79,14 +77,26 @@ export async function signIn(email: string, password: string) {
         throw new Error(error.message);
     }
 
+    // Session থেকে token নাও
+    const accessToken = data.session?.access_token;
+
+    if (accessToken) {
+        // AsyncStorage এ save করো
+        await saveAuthToken(accessToken);
+        console.log("TOKEN STORED:", accessToken);
+    } else {
+        console.log("⚠️ No access token returned from Supabase!");
+    }
+
     return { success: true, session: data.session };
 }
+
 
 export async function signInWithOAuth(provider: 'google' | 'apple') {
     try {
         const isDev = __DEV__;
         const redirectTo = isDev
-            ? 'exp://https://www.granitefinance.io/auth-callback' 
+            ? 'exp://https://www.granitefinance.io/auth-callback'
             : 'granite://auth/callback';
 
         console.log('Starting OAuth for:', provider);
@@ -96,7 +106,7 @@ export async function signInWithOAuth(provider: 'google' | 'apple') {
             provider,
             options: {
                 redirectTo,
-                skipBrowserRedirect: false, 
+                skipBrowserRedirect: false,
                 queryParams: {
                     access_type: 'offline',
                     prompt: 'consent',

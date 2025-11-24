@@ -1,11 +1,18 @@
+import { getAuthToken } from "@/utils/auth";
+
 // services/plaid/index.ts
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 export const PlaidService = {
   // 1. Link Token (NO BEARER TOKEN NEEDED — Supabase cookie auto sent)
   getLinkToken: async (): Promise<string> => {
+    const token = await getAuthToken()
     const res = await fetch(`${API_URL}/api/plaid/link-token`, {
       method: "GET",
-      credentials: "include", // This is the magic
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      credentials: "include",
     });
     if (!res.ok) throw new Error("Failed to get link token");
     const data = await res.json();
@@ -17,6 +24,7 @@ export const PlaidService = {
     const res = await fetch(`${API_URL}/api/plaid/update-link-token?item_id=${itemId}`, {
       credentials: "include",
     });
+    console.log("Update link token response:", res);
     if (!res.ok) throw new Error("Failed to get update token");
     const data = await res.json();
     return data.link_token;

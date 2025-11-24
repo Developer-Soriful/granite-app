@@ -109,11 +109,15 @@ export default function LoginScreen() {
 
     try {
       const { success } = await signIn(email, password);
-      // The AuthContext will handle the redirect to /welcome on successful login
-      router.replace('/welcome');
+
       if (!success) {
         setMessage("Login failed. Please try again.");
+        setLoading(false);
+        return;
       }
+
+      router.replace('/welcome');
+
     } catch (error: any) {
       setMessage(error.message || "Login failed. Please try again.");
       setLoading(false);
@@ -124,7 +128,7 @@ export default function LoginScreen() {
   const handleOAuthLogin = async (provider: 'google' | 'apple') => {
     setLoading(true);
     setMessage("");
-    
+
     try {
       // This will open the browser for OAuth flow
       // The AuthContext will handle the redirect when the user returns
@@ -137,7 +141,7 @@ export default function LoginScreen() {
 
   // Google login handler
   const handleGoogleLogin = () => handleOAuthLogin('google');
-  
+
   // Apple login handler
   const handleAppleLogin = () => handleOAuthLogin('apple');
 
