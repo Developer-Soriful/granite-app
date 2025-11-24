@@ -70,7 +70,7 @@ export default function EducationPage() {
                     <View className="mb-4">
                         <TouchableOpacity
                             className="w-full px-8 py-4 bg-[#66BB6A] rounded-2xl shadow-lg active:bg-[#66BB6A]/90"
-                            onPress={() => router.push('/paywall')}
+                            onPress={() => router.push('/(app)/paywall')}
                         >
                             <Text className="text-white font-semibold text-lg text-center">
                                 Take control of your budget

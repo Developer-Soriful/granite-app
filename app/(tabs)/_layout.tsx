@@ -9,12 +9,11 @@ export default function TabLayout() {
     useBackHandler();
 
     return (
-        <View style={{ flex: 1, paddingBottom: 4, backgroundColor: "white" }}>
+        <View style={{ flex: 1, backgroundColor: "white" }}>
             <Tabs
                 screenOptions={{
                     headerShown: false,
                     tabBarStyle: {
-                        paddingBottom: 8,
                         paddingTop: 8,
                     },
                     tabBarLabelStyle: {

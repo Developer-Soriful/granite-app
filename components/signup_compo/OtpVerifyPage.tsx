@@ -5,25 +5,29 @@ import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from 'reac
 import { resendOtp, verifyOtp } from '../../hooks/useAuthActions';
 import SubmitButton from '../settings/SubmitButton';
 
-export default function OtpVerifyPage() {
+interface OtpVerifyPageProps {
+    email?: string;
+    message?: string;
+}
+
+export default function OtpVerifyPage({ email: propEmail, message: propMessage }: OtpVerifyPageProps) {
     const router = useRouter();
     const params = useLocalSearchParams();
 
-    // Get email from params, redirect if not provided
-    const userEmail = params.email as string;
-    if (!userEmail) {
-        router.replace('/(auth)/signup');
-        return null;
-    }
-
-    const initialMessage = 'We\'ve sent a 6-digit verification code to your email address.';
-
+    // Get email from props or params
+    const userEmail = propEmail || params.email as string;
+    const initialMessage = propMessage || 'We\'ve sent a 6-digit verification code to your email.';
+    const [localMessage, setLocalMessage] = useState(initialMessage);
     const [otp, setOtp] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [resendDisabled, setResendDisabled] = useState(true);
     const [resendCountdown, setResendCountdown] = useState(60);
     const [isResending, setIsResending] = useState(false);
-    const [localMessage, setLocalMessage] = useState(initialMessage);
+
+    if (!userEmail) {
+        router.replace('/(auth)/signup');
+        return null;
+    }
 
     const isError = localMessage && (
         localMessage.toLowerCase().includes('error') ||
@@ -109,7 +113,7 @@ export default function OtpVerifyPage() {
     return (
         <View className="flex-1 bg-white p-6">
             <TouchableOpacity
-                onPress={() => router.push('/(auth)/signup')}
+                onPress={() => router.back()}
                 className="mb-6"
             >
                 <Ionicons name="arrow-back" size={24} color="black" />
@@ -178,7 +182,7 @@ export default function OtpVerifyPage() {
                     </Text>
                     <TouchableOpacity
                         onPress={handleResend}
-                        disabled={resendDisabled}
+                        disabled={resendDisabled || isResending}
                     >
                         <Text
                             className={`font-medium ${resendDisabled ? 'text-gray-400' : 'text-[#338059]'
@@ -186,7 +190,9 @@ export default function OtpVerifyPage() {
                         >
                             {resendDisabled
                                 ? `Resend code in ${resendCountdown}s`
-                                : 'Resend code'}
+                                : isResending
+                                    ? 'Sending...'
+                                    : 'Resend code'}
                         </Text>
                     </TouchableOpacity>
                 </View>
