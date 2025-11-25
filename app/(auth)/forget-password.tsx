@@ -10,9 +10,14 @@ import {
   View,
 } from "react-native";
 
+import supabase from "@/config/supabase.config";
+
 const requestPasswordResetOtp = async (email: string) => {
-  console.log("Password reset OTP requested for:", email);
-  return { success: true, redirectTo: "/(auth)/verify-reset-password" };
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) {
+    return { error: error.message };
+  }
+  return { success: true, redirectTo: `/(auth)/verify-reset-password?email=${encodeURIComponent(email)}` };
 };
 
 export default function ForgotPasswordScreen() {
@@ -41,6 +46,7 @@ export default function ForgotPasswordScreen() {
       const result = await requestPasswordResetOtp(email);
 
       if (result?.redirectTo) {
+        // @ts-ignore
         router.push(result.redirectTo);
       } else if (result?.error) {
         setMessage(result.error);
@@ -55,7 +61,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-        <HomeHeader></HomeHeader>
+      <HomeHeader></HomeHeader>
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
@@ -92,9 +98,8 @@ export default function ForgotPasswordScreen() {
 
             {/* Submit Button */}
             <TouchableOpacity
-              className={`w-full bg-[#75c178] py-3 px-4 rounded-lg flex-row items-center justify-center ${
-                isPending ? "opacity-50" : ""
-              }`}
+              className={`w-full bg-[#75c178] py-3 px-4 rounded-lg flex-row items-center justify-center ${isPending ? "opacity-50" : ""
+                }`}
               onPress={handleSubmit}
               disabled={isPending}
             >
@@ -113,11 +118,10 @@ export default function ForgotPasswordScreen() {
             {/* Message Display */}
             {message ? (
               <View
-                className={`p-3 rounded-lg border ${
-                  isError
+                className={`p-3 rounded-lg border ${isError
                     ? "bg-red-50 text-red-600 border-red-200"
                     : "bg-green-50 text-green-600 border-green-200"
-                }`}
+                  }`}
               >
                 <Text className="text-sm text-center">{message}</Text>
               </View>

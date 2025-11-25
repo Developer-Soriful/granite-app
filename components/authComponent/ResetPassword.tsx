@@ -15,11 +15,20 @@ interface ResetPasswordScreenProps {
   email?: string;
 }
 
+import supabase from "@/config/supabase.config";
+
 const updatePasswordWithOtp = async (
   password: string,
   confirmPassword: string
 ) => {
-  console.log("Updating password:", password);
+  const { data, error } = await supabase.auth.updateUser({
+    password: password
+  });
+
+  if (error) {
+    throw error;
+  }
+
   return { success: true, redirectTo: "/(auth)" };
 };
 
@@ -89,8 +98,8 @@ export default function ResetPasswordScreen({
       if (result?.redirectTo) {
         router.push(result.redirectTo);
       }
-    } catch (error) {
-      setError("An unexpected error occurred.");
+    } catch (error: any) {
+      setError(error.message || "An unexpected error occurred.");
     } finally {
       setIsPending(false);
     }
@@ -274,8 +283,8 @@ export default function ResetPasswordScreen({
                 borderRadius: 8,
                 opacity:
                   isPending ||
-                  !allRequirementsMet ||
-                  password !== confirmPassword
+                    !allRequirementsMet ||
+                    password !== confirmPassword
                     ? 0.5
                     : 1,
               }}

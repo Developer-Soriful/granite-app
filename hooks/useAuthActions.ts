@@ -1,24 +1,21 @@
 import supabase from "@/config/supabase.config";
-import { saveAuthToken } from "@/utils/auth";
 import { EmailOtpType } from '@supabase/supabase-js';
 import * as WebBrowser from 'expo-web-browser';
 
 /**
  * Verifies the OTP (token) sent to the user's email or phone.
  */
-
 export async function verifyOtp({ email, token, type }: { email: string; token: string; type: EmailOtpType }) {
     const { data, error } = await supabase.auth.verifyOtp({
         email: email,
         token: token,
-        type: type, // Should be 'email' for email OTP
+        type: type,
     });
 
     if (error) {
         console.error('Verify OTP Error:', error.message);
         throw new Error(error.message);
     }
-    // If successful, data.session and data.user are returned, automatically logging in the user.
     return { success: true, data };
 }
 
@@ -39,11 +36,10 @@ export async function resendOtp({ email, type }: { email: string; type: ResendOt
     }
     return { success: true, message: 'Verification code resent successfully.' };
 }
-// ---------------------------------------------
 
-
-// --- NEW SIGN UP FUNCTIONALITY ---
-// In hooks/useAuthActions.ts
+/**
+ * Sign up a new user
+ */
 export async function signUp(email: string, password: string) {
     try {
         await supabase.auth.signOut();
@@ -69,6 +65,10 @@ export async function signUp(email: string, password: string) {
     }
 }
 
+/**
+ * Sign in with email and password
+ * Supabase automatically manages the session - no need to manually save tokens
+ */
 export async function signIn(email: string, password: string) {
     const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -80,26 +80,20 @@ export async function signIn(email: string, password: string) {
         throw new Error(error.message);
     }
 
-    // Session থেকে token নাও
-    const accessToken = data.session?.access_token;
-
-    if (accessToken) {
-        // AsyncStorage এ save করো
-        await saveAuthToken(accessToken);
-        console.log("TOKEN STORED:", accessToken);
-    } else {
-        console.log("⚠️ No access token returned from Supabase!");
-    }
+    // Supabase automatically manages the session
+    console.log("✅ Sign in successful, session managed by Supabase");
 
     return { success: true, session: data.session };
 }
 
-
+/**
+ * Sign in with OAuth (Google or Apple)
+ */
 export async function signInWithOAuth(provider: 'google' | 'apple') {
     try {
         const isDev = __DEV__;
         const redirectTo = isDev
-            ? 'exp://https://www.granitefinance.io/auth-callback' 
+            ? 'exp://https://www.granitefinance.io/auth-callback'
             : 'granite://auth/callback';
 
         console.log('Starting OAuth for:', provider);
@@ -119,10 +113,7 @@ export async function signInWithOAuth(provider: 'google' | 'apple') {
 
         if (error) throw error;
 
-        // If we have a URL, it means we need to handle the redirect manually
         if (data?.url) {
-            // This will open the URL in the system browser
-            // The browser will redirect back to the app after auth
             await WebBrowser.openAuthSessionAsync(
                 data.url,
                 redirectTo
@@ -136,6 +127,9 @@ export async function signInWithOAuth(provider: 'google' | 'apple') {
     }
 }
 
+/**
+ * Sign out the current user
+ */
 export async function signOut() {
     const { error } = await supabase.auth.signOut();
 

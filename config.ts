@@ -1,2 +1,4 @@
+import Constants from 'expo-constants';
+
 // config.ts
-export const API_URL = "https://www.granitefinance.io";
+export const API_URL = Constants.expoConfig?.extra?.apiUrl as string;

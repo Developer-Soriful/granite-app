@@ -7,7 +7,6 @@ import TransactionsOverview from "@/components/TransactionsOverview";
 import { useRecentTransactions } from "@/hooks/useTransactions";
 import { InsightsApi } from "@/services/ApiService";
 import { PlaidService } from "@/services/plaid";
-import { getAuthToken } from "@/utils/auth";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -21,13 +20,10 @@ function Dashboard() {
       new Date().toISOString().slice(0, 7)
     ).then(res => setLogData(res.data)),
   });
-  const checkToken = async () => {
-    const token = await getAuthToken();
-    console.log("Current auth token:", token);
-  };
-  checkToken()
-  // console.log(logData);
+
+  // Token is now automatically handled by ApiService via Supabase session
   PlaidService.getUpdateLinkToken("123").then(res => res)
+
   return (
     <View style={styles.dailyBudgetContainer}>
       <View
@@ -43,8 +39,6 @@ function Dashboard() {
           marginRight: 16,
         }}
       >
-        {/* If the Header component accepts a user prop, you can pass the name/email: */}
-        {/* <Header userEmail={session?.user?.email} /> */}
         <Header />
       </View>
       <ScrollView
@@ -63,7 +57,6 @@ function Dashboard() {
           expenses={spendingData}
         />
 
-
         {/* Forecast Future Daily Budget section */}
         <View
           style={{
@@ -71,18 +64,20 @@ function Dashboard() {
             borderRadius: 16,
           }}
         >
-          {/* Placeholder data needs to be replaced with real financial data from Plaid */}
           <ForecastFuture currentAvg={50.25} numberOfDays={30} maxValue={200} />
         </View>
-        {/* this is for Spending Insights */}
+
+        {/* Spending Insights */}
         <View>
           <SpendingInsights />
         </View>
-        {/* this is for Transactions Overview card */}
+
+        {/* Transactions Overview */}
         <View>
           <TransactionsOverview />
         </View>
-        {/* this is for Recent Transactions History */}
+
+        {/* Recent Transactions History */}
         <View>
           <RecentTransactionsHistory
             transactions={transactions}
@@ -93,7 +88,9 @@ function Dashboard() {
     </View>
   );
 }
+
 export default Dashboard
+
 const styles = StyleSheet.create({
   dailyBudgetContainer: {
     flex: 1,
@@ -101,7 +98,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     fontFamily: "Instrument Sans",
   },
-  // ... (rest of your styles are omitted for brevity, they remain unchanged)
   card: {
     backgroundColor: "#fefffe",
     borderRadius: 16,
@@ -111,7 +107,6 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 16,
   },
-  // ... (rest of the styles)
   barsContainer: {
     flexDirection: "column",
     gap: 6,

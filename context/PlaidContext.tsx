@@ -1,5 +1,6 @@
-// src/context/PlaidContext.tsx  ← EI FILE TA PURA REPLACE KOR
+// src/context/PlaidContext.tsx
 import { API_URL } from "@/config";
+import { supabase } from "@/config/supabase.config";
 import { PlaidService } from "@/services/plaid";
 import { createContext, useContext, useState } from "react";
 import { Alert } from "react-native";
@@ -29,15 +30,22 @@ export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
     const [error, setError] = useState<string | null>(null);
 
     const fetchAccounts = async () => {
-        console.log("Calling link token URL:", `${API_URL}/api/plaid/link-token`);
+        console.log("Fetching accounts from:", `${API_URL}/api/plaid/accounts`);
         try {
             setIsLoading(true);
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error("No session found");
+
             const res = await fetch(`${API_URL}/api/plaid/accounts`, {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json'
+                },
                 credentials: "include",
             });
             if (!res.ok) throw new Error("Failed to load accounts");
             const data = await res.json();
-            console.log(res)
+            console.log("Accounts response:", data);
             setAccounts(data.accounts || []);
         } catch (err: any) {
             setError(err.message);
@@ -49,13 +57,20 @@ export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
     const fetchTransactions = async (start: string, end: string) => {
         try {
             setIsLoading(true);
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error("No session found");
+
             const res = await fetch(
                 `${API_URL}/api/plaid/transactions?start_date=${start}&end_date=${end}`,
-                { credentials: "include" }
+                {
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: "include"
+                }
             );
             if (!res.ok) throw new Error("Failed to load transactions");
-            const data = await res.json();
-            setTransactions(data.transactions || []);
         } catch (err: any) {
             setError(err.message);
         } finally {

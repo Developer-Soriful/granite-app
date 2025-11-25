@@ -1,0 +1,423 @@
+{
+	"info": {
+		"_postman_id": "b66f3693-bc9e-41b7-b696-835575b3ff9a",
+		"name": "Granite Finance API - All Endpoints (WORKING)",
+		"description": "Complete working collection with all API endpoints and correct authentication",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "44293718"
+	},
+	"item": [
+		{
+			"name": "Login to Supabase",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"",
+							"if (pm.response.code === 200 && jsonData.access_token) {",
+							"    var projectRef = 'qzbkohynvszmnmybnhiw';",
+							"    var sessionStr = JSON.stringify(jsonData);",
+							"    var base64Session = btoa(sessionStr);",
+							"    var CHUNK_SIZE = 4000;",
+							"    var chunks = [];",
+							"    for (var i = 0; i < base64Session.length; i += CHUNK_SIZE) {",
+							"        chunks.push(base64Session.substring(i, i + CHUNK_SIZE));",
+							"    }",
+							"    var cookieParts = [];",
+							"    for (var j = 0; j < chunks.length; j++) {",
+							"        var cookieName = 'sb-' + projectRef + '-auth-token.' + j;",
+							"        cookieParts.push(cookieName + '=base64-' + chunks[j]);",
+							"    }",
+							"    var fullCookie = cookieParts.join('; ');",
+							"    pm.collectionVariables.set('auth_cookies', fullCookie);",
+							"    pm.collectionVariables.set('access_token', jsonData.access_token);",
+							"    pm.collectionVariables.set('user_id', jsonData.user.id);",
+							"    console.log('✅ Login successful! User:', jsonData.user.id);",
+							"} else {",
+							"    console.error('❌ Login failed');",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "apikey",
+						"value": "{{supabase_anon_key}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"email\": \"{{email}}\", \"password\": \"{{password}}\"}"
+				},
+				"url": {
+					"raw": "{{supabase_url}}/auth/v1/token?grant_type=password",
+					"host": [
+						"{{supabase_url}}"
+					],
+					"path": [
+						"auth",
+						"v1",
+						"token"
+					],
+					"query": [
+						{
+							"key": "grant_type",
+							"value": "password"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Plaid Link Token",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{auth_cookies}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/plaid/link-token",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"plaid",
+						"link-token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Plaid Update Link Token",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{auth_cookies}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/plaid/update-link-token?item_id=item_123&reason=new_accounts",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"plaid",
+						"update-link-token"
+					],
+					"query": [
+						{
+							"key": "item_id",
+							"value": "item_123"
+						},
+						{
+							"key": "reason",
+							"value": "new_accounts"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sync Plaid Transactions",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{auth_cookies}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"public_token\": \"public-sandbox-xxx\"}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/plaid/sync",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"plaid",
+						"sync"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Remove Plaid Item",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{auth_cookies}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"item_id\": \"item_123\"}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/plaid/remove-item",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"plaid",
+						"remove-item"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Request Account Deletion",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{auth_cookies}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/user/request-deletion",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"user",
+						"request-deletion"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Checkout Session",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{auth_cookies}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"priceId\": \"price_xxx\", \"planType\": \"monthly\"}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/stripe/create-session",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"stripe",
+						"create-session"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Preview Proration",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{auth_cookies}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"newPriceId\": \"price_new\"}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/stripe/preview-proration",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"stripe",
+						"preview-proration"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Cancel Subscription",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{auth_cookies}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subscriptionId\": \"sub_xxx\", \"mode\": \"period_end\"}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/stripe/cancel-subscription",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"stripe",
+						"cancel-subscription"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Reactivate Subscription",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{auth_cookies}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subscriptionId\": \"sub_xxx\", \"dryRun\": false}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/stripe/reactivate-subscription",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"stripe",
+						"reactivate-subscription"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Expired Subscription",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "{{auth_cookies}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subscriptionId\": \"sub_xxx\"}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/stripe/delete-subscription",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"stripe",
+						"delete-subscription"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://www.granitefinance.io"
+		},
+		{
+			"key": "supabase_url",
+			"value": "https://qzbkohynvszmnmybnhiw.supabase.co"
+		},
+		{
+			"key": "supabase_anon_key",
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6YmtvaHludnN6bW5teWJuaGl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTQwNzUsImV4cCI6MjA1OTk3MDA3NX0.r1_wWKwFO8xaj-3bVnneLaHeHJLH55WHZCIBAiZGIUk"
+		},
+		{
+			"key": "email",
+			"value": "kojn6193@gmail.com"
+		},
+		{
+			"key": "password",
+			"value": "your-password"
+		},
+		{
+			"key": "auth_cookies",
+			"value": ""
+		},
+		{
+			"key": "access_token",
+			"value": ""
+		},
+		{
+			"key": "user_id",
+			"value": ""
+		}
+	]
+}

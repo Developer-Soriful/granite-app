@@ -3,39 +3,21 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { PlaidProvider } from "@/context/PlaidContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Linking from "expo-linking";
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Slot, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from 'react';
 import { BackHandler, View } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import "./global.css";
+
 const queryClient = new QueryClient();
 
 /* -----------------------------
       APP ROUTES LOGIC
------------------------------- */
+------------------------------- */
 function AppRoutes() {
-  const { session, isLoading, hasCompletedPaywall } = useAuth();
-  const router = useRouter();
-  const segments = useSegments();
-
-  useEffect(() => {
-    if (isLoading) return;
-
-    const inAuthGroup = segments[0] === '(auth)';
-    const inTabsGroup = segments[0] === '(tabs)';
-
-    if (!session) {
-      // If no session and not in auth group, go to auth
-      if (!inAuthGroup) {
-        router.replace('/(auth)');
-      }
-    } else if (inAuthGroup && hasCompletedPaywall) {
-      // If has session and in auth group, go to tabs
-      router.replace('/(tabs)');
-    }
-  }, [session, segments, isLoading]);
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -47,6 +29,7 @@ function AppRoutes() {
 
   return <Slot />;
 }
+
 /* -----------------------------
         ROOT LAYOUT
 ------------------------------ */

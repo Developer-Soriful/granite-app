@@ -1,4 +1,5 @@
 import { Images } from '@/assets';
+import { useAuth } from '@/context/AuthContext';
 import { SectionRefs } from '@/services/types/navigation';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -16,7 +17,6 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-// IMPORT useSafeAreaInsets for dynamic padding
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface HomeHeaderProps {
@@ -30,8 +30,7 @@ const { width, height } = Dimensions.get('window');
 const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps) => {
     const [menuVisible, setMenuVisible] = useState(false);
     const slideAnim = useRef(new Animated.Value(width)).current;
-
-    // 🔑 FIX: Get the safe area insets dynamically
+    const { session, logout } = useAuth();
     const insets = useSafeAreaInsets();
 
     useEffect(() => {
@@ -56,12 +55,17 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
         setMenuVisible(false);
         router.push('/(auth)');
     };
+
     const handleSignup = () => {
         setMenuVisible(false);
         router.push('/(auth)/signup');
     };
 
-    // (scrollTo function remains unchanged, omitted for brevity)
+    const handleLogout = async () => {
+        setMenuVisible(false);
+        await logout();
+    };
+
     const scrollTo = (section: keyof SectionRefs) => {
         const sectionRef = sections[section];
         const scrollNode = scrollRef.current;
@@ -147,7 +151,6 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
                             { transform: [{ translateX: slideAnim }] },
                         ]}
                     >
-                        {/* The content is inside SafeAreaView to handle top and bottom insets */}
                         <SafeAreaView
                             className='bg-white relative flex flex-col justify-between'
                             style={styles.menuContent}
@@ -184,31 +187,46 @@ const HomeHeader = ({ isScrolled = false, sections, scrollRef }: HomeHeaderProps
                                 </View>
                             </View>
 
-                            {/* Bottom Section (Login/Signup Buttons)
-                                🔑 FIX: Applying the safe area bottom inset directly to the style
-                                using the 'insets.bottom' value. We also add a small margin (16)
-                                for visual spacing above the inset.
-                            */}
+                            {/* Bottom Section (Login/Signup/Logout Buttons) */}
                             <View
                                 className=' flex flex-col gap-4 px-3'
-                                style={{ paddingBottom: insets.bottom + 32 }} // <-- DYNAMIC PADDING FIX
+                                style={{ paddingBottom: insets.bottom + 32 }}
                             >
-                                <TouchableOpacity
-                                    onPress={handleLogin}
-                                    style={styles.loginButton}
-                                >
-                                    <Text className='text-sm text-[#338059] font-semibold text-center'>
-                                        Log In
-                                    </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={handleSignup}
-                                    style={styles.signupButton}
-                                >
-                                    <Text className='text-sm text-[#fff] font-semibold text-center'>
-                                        Sign Up
-                                    </Text>
-                                </TouchableOpacity>
+                                {session ? (
+                                    <TouchableOpacity
+                                        onPress={handleLogout}
+                                        style={{
+                                            width: '100%',
+                                            borderRadius: 16,
+                                            backgroundColor: '#e53e3e',
+                                            paddingHorizontal: 24,
+                                            paddingVertical: 12,
+                                        }}
+                                    >
+                                        <Text className='text-sm text-[#fff] font-semibold text-center'>
+                                            Log Out
+                                        </Text>
+                                    </TouchableOpacity>
+                                ) : (
+                                    <>
+                                        <TouchableOpacity
+                                            onPress={handleLogin}
+                                            style={styles.loginButton}
+                                        >
+                                            <Text className='text-sm text-[#338059] font-semibold text-center'>
+                                                Log In
+                                            </Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={handleSignup}
+                                            style={styles.signupButton}
+                                        >
+                                            <Text className='text-sm text-[#fff] font-semibold text-center'>
+                                                Sign Up
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </>
+                                )}
                             </View>
                         </SafeAreaView>
                     </Animated.View>
@@ -238,10 +256,7 @@ const styles = StyleSheet.create({
     },
     menuContent: {
         flex: 1,
-        // Since we are applying bottom inset dynamically to the button container,
-        // we ensure SafeAreaView takes full flex 1 space.
     },
-    // Moved button styles here for cleanliness (optional, but good practice)
     loginButton: {
         width: '100%',
         borderRadius: 16,
