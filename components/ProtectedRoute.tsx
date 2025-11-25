@@ -1,13 +1,14 @@
 // components/ProtectedRoute.tsx
-import { Redirect, useRouter, useSegments } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import { Redirect, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { useAuth } from '../context/AuthContext';
+
+type RouteGroup = '(auth)' | '(app)' | '(tabs)' | string;
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { session, isLoading, hasCompletedPaywall } = useAuth();
     const segments = useSegments();
-    const router = useRouter();
     const [isReady, setIsReady] = useState(false);
 
     useEffect(() => {
@@ -17,7 +18,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     }, [isLoading]);
 
     // Show loading indicator while checking auth state
-    if (!isReady || (session && hasCompletedPaywall === null)) {
+    if (!isReady || isLoading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />
@@ -25,22 +26,29 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         );
     }
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const inPaywall = segments[0] === 'paywall';
+    const currentRouteGroup: RouteGroup = segments[0] || '';
 
-    // If user is not signed in and the initial segment is not in the auth group
-    if (!session && !inAuthGroup) {
-        return <Redirect href="/(auth)" />;
+    // 1. If user is not logged in, redirect to auth
+    if (!session) {
+        if (currentRouteGroup !== '(auth)') {
+            return <Redirect href="/(auth)" />;
+        }
+        return <>{children}</>;
     }
 
-    // If user is signed in but hasn't completed paywall and not on paywall page
-    if (session && !hasCompletedPaywall && !inPaywall) {
-        return <Redirect href="/(app)/paywall" />;
+    // 2. If user is logged in but hasn't completed paywall
+    if (session && !hasCompletedPaywall) {
+        if (currentRouteGroup !== '(app)') {
+            return <Redirect href="/(app)" />;
+        }
+        return <>{children}</>;
     }
 
-    // If user is signed in and has completed paywall but is on auth or paywall page
-    if (session && hasCompletedPaywall && (inAuthGroup || inPaywall)) {
-        return <Redirect href="/(tabs)" />;
+    // 3. If user is logged in and has completed paywall
+    if (session && hasCompletedPaywall) {
+        if (currentRouteGroup !== '(tabs)') {
+            return <Redirect href="/(tabs)" />;
+        }
     }
 
     return <>{children}</>;

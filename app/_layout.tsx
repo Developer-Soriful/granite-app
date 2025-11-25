@@ -1,9 +1,10 @@
+import ProtectedRoute from "@/components/ProtectedRoute";
 import supabase from "@/config/supabase.config";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { PlaidProvider } from "@/context/PlaidContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Linking from "expo-linking";
-import { Slot, useRouter } from "expo-router";
+import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from 'react';
 import { BackHandler, View } from "react-native";
@@ -18,6 +19,33 @@ const queryClient = new QueryClient();
 ------------------------------- */
 function AppRoutes() {
   const { isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  // Handle deep linking for OAuth
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      const { data, error } = await supabase.auth.getSession();
+      if (data?.session) {
+        router.replace('/(tabs)');
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+    return () => subscription.remove();
+  }, []);
+
+  // Handle Android back button
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (router.canGoBack()) {
+        router.back();
+        return true;
+      }
+      return false;
+    });
+    return () => backHandler.remove();
+  }, []);
 
   if (isLoading) {
     return (
@@ -79,9 +107,11 @@ export default function RootLayout() {
           <PlaidProvider>
             <SafeAreaView style={{ flex: 1 }} edges={['top', 'right', 'left']}>
               <StatusBar style="dark" />
-              <View style={{ flex: 1 }}>
-                <AppRoutes />
-              </View>
+              <ProtectedRoute>
+                <View style={{ flex: 1 }}>
+                  <AppRoutes />
+                </View>
+              </ProtectedRoute>
             </SafeAreaView>
           </PlaidProvider>
         </AuthProvider>
