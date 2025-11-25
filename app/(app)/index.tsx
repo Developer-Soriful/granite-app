@@ -6,7 +6,7 @@ import Features from '@/components/Features';
 import HomeHeader from '@/components/HomeHeader';
 import HowItWork from '@/components/HowItWork';
 import Testimonial from '@/components/Testimonial';
-import { useAuth } from "@/context/AuthContext";
+
 import { SectionRefs } from '@/services/types/navigation';
 import Button from '@/ui/Button';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,13 +45,7 @@ const HomePage = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // Check for existing session and redirect to dashboard
-    const { session } = useAuth();
-    useEffect(() => {
-        if (session) {
-            router.replace('/(tabs)');
-        }
-    }, [session]);
+
 
     // Create refs for each section
     const howItWorksRef = useRef<View>(null);

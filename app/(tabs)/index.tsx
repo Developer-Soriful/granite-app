@@ -6,7 +6,6 @@ import SpendMoney from "@/components/SpendMoney";
 import TransactionsOverview from "@/components/TransactionsOverview";
 import { useRecentTransactions } from "@/hooks/useTransactions";
 import { InsightsApi } from "@/services/ApiService";
-import { PlaidService } from "@/services/plaid";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -20,9 +19,6 @@ function Dashboard() {
       new Date().toISOString().slice(0, 7)
     ).then(res => setLogData(res.data)),
   });
-
-  // Token is now automatically handled by ApiService via Supabase session
-  PlaidService.getUpdateLinkToken("123").then(res => res)
 
   return (
     <View style={styles.dailyBudgetContainer}>
