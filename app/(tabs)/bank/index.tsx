@@ -1,21 +1,25 @@
 // app/(tabs)/bank/index.tsx
+import BankAccountsList from '@/components/plaid/BankAccountsList';
+import { TransactionsList } from '@/components/plaid/TransactionsList';
+import { usePlaid } from '@/context/PlaidContext';
 import { format, subMonths } from 'date-fns';
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { BankAccountsList } from '../../../components/plaid/BankAccountsList';
-import { TransactionsList } from '../../../components/plaid/TransactionsList';
-import { usePlaid } from '../../../context/PlaidContext';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const BankScreen = () => {
     const {
-        accounts,
-        transactions,
+        accounts = [],
+        transactions = [],
         fetchAccounts,
         fetchTransactions,
-        isLoading
+        connectBank,
+        isLoading,
+        error,
     } = usePlaid();
+
     const [activeTab, setActiveTab] = useState<'accounts' | 'transactions'>('accounts');
     const [refreshing, setRefreshing] = useState(false);
+
     // Initial data fetch
     useEffect(() => {
         const loadData = async () => {
@@ -34,11 +38,10 @@ const BankScreen = () => {
         const thirtyDaysAgo = subMonths(now, 1);
         const startDate = format(thirtyDaysAgo, 'yyyy-MM-dd');
         const endDate = format(now, 'yyyy-MM-dd');
-
         await fetchTransactions(startDate, endDate);
     };
 
-    const handleRefresh = async () => {
+    const handleRefresh = useCallback(async () => {
         setRefreshing(true);
         try {
             if (activeTab === 'accounts') {
@@ -51,12 +54,23 @@ const BankScreen = () => {
         } finally {
             setRefreshing(false);
         }
+    }, [activeTab, fetchAccounts]);
+
+    const handleConnectBank = async () => {
+        try {
+            await connectBank();
+            // Refresh data after successful connection
+            await Promise.all([fetchAccounts(), fetchTransactionsData()]);
+        } catch (error) {
+            console.error('Bank connection failed:', error);
+            Alert.alert('Error', 'Failed to connect bank account. Please try again.');
+        }
     };
 
-    const handleSuccess = () => {
-        // Refresh data after successful account connection
-        fetchAccounts().catch(console.error);
-        fetchTransactionsData().catch(console.error);
+    const handleAccountPress = (account: any) => {
+        console.log('Account pressed:', account);
+        // You can navigate to account details here if needed
+        // router.push(`/account/${account.id}`);
     };
 
     return (
@@ -70,7 +84,6 @@ const BankScreen = () => {
                         Accounts ({accounts?.length ?? 0})
                     </Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'transactions' && styles.activeTab]}
                     onPress={() => setActiveTab('transactions')}
@@ -83,7 +96,15 @@ const BankScreen = () => {
 
             <View style={styles.content}>
                 {activeTab === 'accounts' ? (
-                    <BankAccountsList />
+                    <BankAccountsList
+                        accounts={accounts}
+                        onRefresh={handleRefresh}
+                        refreshing={refreshing}
+                        onAccountPress={handleAccountPress}
+                        onConnectPress={handleConnectBank}
+                        isLoading={isLoading}
+                        error={error}
+                    />
                 ) : (
                     <TransactionsList
                         transactions={transactions}
@@ -117,7 +138,7 @@ const styles = StyleSheet.create({
         borderBottomColor: 'transparent',
     },
     activeTab: {
-        backgroundColor: "#e6f5ee",
+        backgroundColor: '#e6f5ee',
         borderTopEndRadius: 12,
         borderTopStartRadius: 12,
     },

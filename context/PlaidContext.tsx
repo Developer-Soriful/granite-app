@@ -1,10 +1,14 @@
 // src/context/PlaidContext.tsx
-import { API_URL } from "@/config";
 import { supabase } from "@/config/supabase.config";
 import { PlaidService } from "@/services/plaid";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Alert } from "react-native";
-import { LinkExit, LinkSuccess, open } from "react-native-plaid-link-sdk";
+import {
+    LinkExit,
+    LinkSuccess,
+    create,
+    open
+} from "react-native-plaid-link-sdk";
 
 // Polyfill btoa for React Native if not available
 const polyfillBtoa = (input: string) => {
@@ -59,7 +63,10 @@ export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        console.log("Plaid SDK initialized. Open function:", !!open);
+        console.log("Plaid SDK initialized. Functions available:", {
+            create: !!create,
+            open: !!open,
+        });
     }, []);
 
     const fetchAccounts = async () => {
@@ -74,7 +81,6 @@ export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
                 return;
             }
 
-            // Fetch directly from Supabase user_plaid_items table
             const { data, error } = await supabase
                 .from('user_plaid_items')
                 .select('*')
@@ -100,119 +106,206 @@ export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
     const fetchTransactions = async (start: string, end: string) => {
         try {
             setIsLoading(true);
+            setError(null);
+
+            // 1) Get session
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error("No session found");
 
-            // Workaround: Backend expects cookie, not just Bearer token
-            const sessionStr = JSON.stringify(session);
-            const b64Session = safeBtoa(sessionStr);
-            const projectRef = "qzbkohynvszmnmybnhiw"; // From Supabase URL
+            // 2) Get user items
+            const { data: plaidItems, error: itemsError } = await supabase
+                .from('user_plaid_items')
+                .select('*')
+                .eq('user_id', session.user.id);
 
-            console.log("Fetching transactions with cookie auth...");
-
-            const res = await fetch(
-                `${API_URL}/api/plaid/transactions?start_date=${start}&end_date=${end}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${session.access_token}`,
-                        'Content-Type': 'application/json',
-                        'Cookie': `sb-${projectRef}-auth-token.0=${b64Session.substring(0, 3000)}; sb-${projectRef}-auth-token.1=${b64Session.substring(3000)}`
-                    },
-                    credentials: "include"
-                }
-            );
-
-            if (!res.ok) {
-                const text = await res.text();
-                console.error("Transaction fetch failed:", res.status, text);
-                throw new Error(`Failed to load transactions: ${res.status}`);
+            if (itemsError) throw itemsError;
+            if (!plaidItems || plaidItems.length === 0) {
+                setTransactions([]);
+                return;
             }
 
-            const data = await res.json();
-            setTransactions(data || []);
+            // OPTIONAL: If you want fresh data before fetching, you can sync each item here.
+            for (const item of plaidItems) {
+                try {
+                    await PlaidService.syncItemTransactions(item.id);
+                } catch (e) {
+                    console.error(`Sync failed for item ${item.id}`, e);
+                }
+            }
 
+            // 3) Query transactions per item from Supabase and merge results
+            const allTransactions: any[] = [];
+            for (const item of plaidItems) {
+                const { data: itemTransactions, error: txError } = await supabase
+                    .from('transactions')
+                    .select('*')
+                    .eq('plaid_item_id', item.id)
+                    .gte('date', start)
+                    .lte('date', end)
+                    .order('date', { ascending: false });
+
+                if (txError) {
+                    console.error(`Error fetching transactions for item ${item.id}:`, txError);
+                    continue;
+                }
+                if (itemTransactions) allTransactions.push(...itemTransactions);
+            }
+
+            setTransactions(allTransactions);
         } catch (err: any) {
             console.error("Error fetching transactions:", err);
-            setError(err.message);
+            setError(err.message || 'Failed to load transactions');
         } finally {
             setIsLoading(false);
         }
     };
 
     const connectBank = async () => {
+        console.log("=== CONNECT BANK STARTED ===");
         setIsLoading(true);
         setError(null);
 
         try {
-            console.log("Getting link token...");
+            console.log("1. Getting link token...");
             const link_token = await PlaidService.getLinkToken();
-            console.log("Link token received:", link_token ? "Yes" : "No");
+            console.log("2. Link token received:", !!link_token);
 
-            if (!open) {
-                throw new Error("Plaid SDK 'open' function is not available. Check SDK version.");
+            if (!link_token) {
+                throw new Error("No link token received from backend");
             }
 
-            // Use open() directly with callbacks
-            console.log("Opening Plaid Link...");
-            await open({
+            console.log("3. Configuring Plaid Link with token...");
+
+            // Configure the link with ALL settings including callbacks
+            const linkConfig = {
                 token: link_token,
+                // Add iOS presentation style if on iOS
+                // iOSPresentationStyle: LinkIOSPresentationStyle.MODAL,
+                // logLevel: LinkLogLevel.DEBUG, // Uncomment for debugging
+                noLoadingState: false,
+            };
+
+            console.log("4. Calling create() with config...");
+            create(linkConfig);
+
+            console.log("5. Waiting before open()...");
+
+            // Wait a bit longer to ensure native module is ready
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            console.log("6. Attempting to open Plaid Link...");
+
+            // Open with explicit callbacks
+            open({
                 onSuccess: async (success: LinkSuccess) => {
-                    console.log("Plaid Link Success:", success);
-                    await PlaidService.exchangeToken(success.publicToken);
-                    await fetchAccounts();
-                    Alert.alert("Success", "Bank connected!");
-                    setIsLoading(false);
+                    console.log("✅ SUCCESS! Public token received:", success.publicToken.substring(0, 20) + "...");
+                    console.log("Metadata:", success.metadata);
+
+                    try {
+                        console.log("Exchanging public token...");
+                        await PlaidService.exchangeToken(success.publicToken);
+                        console.log("Token exchanged successfully");
+
+                        await fetchAccounts();
+                        Alert.alert("Success", "Bank connected successfully!");
+                    } catch (err: any) {
+                        console.error("❌ Error exchanging token:", err);
+                        setError(err.message || "Failed to connect");
+                        Alert.alert("Error", err.message || "Failed to save bank connection");
+                    } finally {
+                        setIsLoading(false);
+                    }
                 },
                 onExit: (exit: LinkExit) => {
-                    console.log("Plaid Link Exit:", exit);
+                    console.log("🚪 User exited Plaid Link");
+                    console.log("Exit metadata:", exit.metadata);
+
                     if (exit.error) {
-                        setError(exit.error.displayMessage || "Cancelled");
+                        console.error("❌ Exit with error:", exit.error);
+                        setError(exit.error.displayMessage || "Connection cancelled");
+                        Alert.alert("Connection Failed", exit.error.displayMessage || "Could not connect to bank");
+                    } else {
+                        console.log("User cancelled (no error)");
                     }
+
                     setIsLoading(false);
                 },
             });
 
+            console.log("7. open() called - modal should appear");
+
         } catch (err: any) {
-            console.error("Connect bank error:", err);
+            console.error("❌ Connect bank error:", err);
+            console.error("Error details:", {
+                message: err.message,
+                name: err.name,
+                stack: err.stack
+            });
+
             setError(err.message || "Failed to connect");
             setIsLoading(false);
+
+            Alert.alert(
+                "Connection Error",
+                err.message || "Could not connect to bank. Please try again."
+            );
         }
     };
 
     const reconnectBank = async (itemId: string) => {
         setIsLoading(true);
+        setError(null);
 
         try {
-            const link_token = await PlaidService.getUpdateLinkToken(itemId);
+            console.log("Getting update link token for item:", itemId);
+            const link_token = await PlaidService.getLinkToken();
 
-            await open({
+            create({
                 token: link_token,
-                onSuccess: async (success: LinkSuccess) => {
+                noLoadingState: false,
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            open({
+                onSuccess: async () => {
+                    console.log("✅ Bank reconnected successfully");
                     await fetchAccounts();
-                    Alert.alert("Success", "Bank reconnected!");
+                    Alert.alert("Success", "Bank reconnected successfully!");
                     setIsLoading(false);
                 },
                 onExit: (exit: LinkExit) => {
+                    console.log("Reconnect exit:", exit);
+                    if (exit.error) {
+                        setError(exit.error.displayMessage || "Cancelled");
+                        Alert.alert("Error", exit.error.displayMessage || "Could not reconnect");
+                    }
                     setIsLoading(false);
                 }
             });
 
         } catch (err: any) {
-            setError(err.message);
+            console.error("Reconnect bank error:", err);
+            setError(err.message || "Failed to reconnect");
             setIsLoading(false);
+            Alert.alert("Error", err.message || "Failed to reconnect bank");
         }
     };
 
     const removeBank = async (itemId: string) => {
-        Alert.alert("Remove Bank", "Are you sure?", [
-            { text: "Cancel" },
+        Alert.alert("Remove Bank", "Are you sure you want to remove this bank account?", [
+            { text: "Cancel", style: "cancel" },
             {
                 text: "Remove",
                 style: "destructive",
                 onPress: async () => {
-                    await PlaidService.removeItem(itemId);
-                    await fetchAccounts();
-                    Alert.alert("Removed", "Bank account removed");
+                    try {
+                        await PlaidService.removeItem(itemId);
+                        await fetchAccounts();
+                        Alert.alert("Removed", "Bank account removed successfully");
+                    } catch (err: any) {
+                        Alert.alert("Error", "Failed to remove bank account");
+                    }
                 },
             },
         ]);

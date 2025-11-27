@@ -116,7 +116,7 @@ export default function LoginScreen() {
         return;
       }
 
-      router.replace('/(app)');
+      router.replace('/(tabs)');
 
     } catch (error: any) {
       setMessage(error.message || "Login failed. Please try again.");

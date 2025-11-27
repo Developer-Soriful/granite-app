@@ -13,7 +13,8 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
         calendar: (props: any) => <Ionicons name="calendar-clear-outline" size={24} {...props} />,
         insights: (props: any) => <MaterialCommunityIcons name="finance" size={24} {...props} />,
         settings: (props: any) => <MaterialCommunityIcons name="cog-outline" size={24} {...props} />,
-        bank: (props: any) => <MaterialCommunityIcons name="bank-outline" size={24} {...props} />
+        bank: (props: any) => <MaterialCommunityIcons name="bank-outline" size={24} {...props} />,
+        'bank/index': (props: any) => <MaterialCommunityIcons name="bank-outline" size={24} {...props} />
     }
 
 

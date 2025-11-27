@@ -93,7 +93,7 @@ export async function signInWithOAuth(provider: 'google' | 'apple') {
     try {
         const isDev = __DEV__;
         const redirectTo = isDev
-            ? 'exp://https://www.granitefinance.io/auth-callback'
+            ? `exp://${process.env.EXPO_PUBLIC_API_URL}/auth-callback`
             : 'granite://auth/callback';
 
         console.log('Starting OAuth for:', provider);

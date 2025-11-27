@@ -1,5 +1,5 @@
 import { Images } from '@/assets';
-import { useAuth } from '@/context/AuthContext'; // 👈 Auth Context Import
+import { useAuth } from '@/context/AuthContext';
 import { Feather, FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';

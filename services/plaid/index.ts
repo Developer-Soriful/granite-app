@@ -1,152 +1,131 @@
-import { supabase } from "@/config/supabase.config";
-
 // services/plaid/index.ts
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 
-// Helper to construct Supabase cookie
-const getSupabaseCookie = async () => {
+import { supabase } from '@/config/supabase.config';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+
+// Helper function for API calls
+async function apiCall(endpoint: string, options: RequestInit = {}) {
+  const url = API_URL ? `${API_URL.replace(/\/$/, '')}${endpoint}` : endpoint;
+
+  // Attach Supabase access token via Bearer header (RN does not reliably handle cookies)
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return null;
+
+  console.log(`Making API call to: ${url}`);
 
   try {
-    // Extract project ref from URL (e.g., https://xyz.supabase.co -> xyz)
-    const projectRef = SUPABASE_URL?.split('.')[0].split('//')[1];
-    if (!projectRef) return null;
+    const response = await fetch(url, {
+      credentials: 'omit',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        ...(options.headers || {}),
+      },
+      ...options,
+    });
 
-    const cookieName = `sb-${projectRef}-auth-token.0`;
-    const sessionStr = JSON.stringify(session);
-    // Use global btoa if available, otherwise simple polyfill or empty
-    const base64Session = typeof btoa !== 'undefined'
-      ? btoa(sessionStr)
-      : Buffer.from(sessionStr).toString('base64');
+    const contentType = response.headers.get('content-type');
 
-    return `${cookieName}=base64-${base64Session}`;
-  } catch (e) {
-    console.error("Error constructing cookie:", e);
-    return null;
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(`API Error ${response.status}:`, {
+          url,
+          status: response.status,
+          statusText: response.statusText,
+          data,
+        });
+        throw new Error(
+          data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`
+        );
+      }
+
+      return data;
+    } else {
+      const text = await response.text();
+      console.warn('Non-JSON response received from', url, 'first bytes:', text.slice(0, 120));
+      throw new Error(`Expected JSON response, got ${contentType}`);
+    }
+  } catch (error) {
+    console.error('API call failed:', {
+      url,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
   }
-};
+}
 
 export const PlaidService = {
-  // 1. Link Token
+  // 1. Get Link Token
   getLinkToken: async (): Promise<string> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("No session found");
+    console.log('Getting Plaid link token...');
+    try {
+      const data = await apiCall('/api/plaid/link-token', {
+        method: 'GET',
+      });
 
-    const cookie = await getSupabaseCookie();
-    console.log("Requesting link token from:", `${API_URL}/api/plaid/link-token`);
-
-    const res = await fetch(`${API_URL}/api/plaid/link-token`, {
-      method: "GET",
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-        ...(cookie ? { 'Cookie': cookie } : {})
-      },
-      credentials: "include",
-    });
-
-    console.log("Link token response status:", res.status);
-    console.log("Link token content-type:", res.headers.get("content-type"));
-
-    // Check if response is HTML instead of JSON
-    const contentType = res.headers.get("content-type");
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Link token error response:", text.substring(0, 200));
-      throw new Error(`Backend returned ${res.status}. Check if /api/plaid/link-token endpoint is working.`);
-    }
-
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await res.text();
-      console.error("Got HTML instead of JSON:", text.substring(0, 200));
-      throw new Error(`Backend is returning HTML instead of JSON. Content-Type: ${contentType}`);
-    }
-
-    const data = await res.json();
-    console.log("Link token received successfully");
-    return data.link_token;
-  },
-
-  // 2. Update Link Token
-  getUpdateLinkToken: async (itemId: string): Promise<string> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("No session found");
-
-    const cookie = await getSupabaseCookie();
-
-    const res = await fetch(`${API_URL}/api/plaid/update-link-token?item_id=${itemId}`, {
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-        ...(cookie ? { 'Cookie': cookie } : {})
-      },
-      credentials: "include",
-    });
-
-    console.log("Update link token response:", res.status);
-
-    // Check if response is actually JSON
-    const contentType = res.headers.get("content-type");
-    if (!res.ok) {
-      throw new Error(`Backend returned ${res.status}. Please check if /api/plaid/update-link-token endpoint exists.`);
-    }
-
-    if (!contentType || !contentType.includes("application/json")) {
-      throw new Error("Backend endpoint exists but returned HTML instead of JSON. Check backend route handler.");
-    }
-
-    const data = await res.json();
-    return data.link_token;
-  },
-
-  // 3. Exchange Public Token
-  exchangeToken: async (public_token: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("No session found");
-
-    const cookie = await getSupabaseCookie();
-
-    const res = await fetch(`${API_URL}/api/plaid/sync`, {
-      method: "POST",
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-        ...(cookie ? { 'Cookie': cookie } : {})
-      },
-      credentials: "include",
-      body: JSON.stringify({ public_token }),
-    });
-
-    if (!res.ok) {
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("text/html")) {
-        throw new Error("Backend API is not available");
+      if (!data || !data.link_token) {
+        throw new Error('No link_token in response');
       }
-      const err = await res.json();
-      throw new Error(err.error || "Sync failed");
+
+      console.log('Successfully received Plaid link token');
+      return data.link_token;
+    } catch (error) {
+      console.error('Failed to get Plaid link token:', error);
+      throw new Error(
+        error instanceof Error
+          ? `Failed to get Plaid link: ${error.message}`
+          : 'Failed to get Plaid link token'
+      );
     }
-    return res.json();
+  },
+
+  // 2. Exchange Public Token
+  exchangeToken: async (publicToken: string) => {
+    try {
+      return await apiCall('/api/plaid/sync', {
+        method: 'POST',
+        body: JSON.stringify({ public_token: publicToken }),
+      });
+    } catch (error) {
+      console.error('Error exchanging token:', error);
+      throw error;
+    }
+  },
+
+  // 3. Sync Item Transactions (existing item)
+  syncItemTransactions: async (itemId: string) => {
+    try {
+      const result = await apiCall('/api/plaid/sync', {
+        method: 'POST',
+        body: JSON.stringify({ item_id: itemId }),
+      });
+
+      console.log('Sync completed:', {
+        added: result.added,
+        modified: result.modified,
+        removed: result.removed,
+        total: result.total,
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error syncing item:', error);
+      throw error;
+    }
   },
 
   // 4. Remove Item
   removeItem: async (itemId: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("No session found");
-
-    const cookie = await getSupabaseCookie();
-
-    await fetch(`${API_URL}/api/plaid/remove-item`, {
-      method: "POST",
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-        ...(cookie ? { 'Cookie': cookie } : {})
-      },
-      credentials: "include",
-      body: JSON.stringify({ item_id: itemId }),
-    });
+    try {
+      return await apiCall('/api/plaid/remove-item', {
+        method: 'POST',
+        body: JSON.stringify({ item_id: itemId }),
+      });
+    } catch (error) {
+      console.error('Error removing item:', error);
+      throw error;
+    }
   },
 };

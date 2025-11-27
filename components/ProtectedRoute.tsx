@@ -4,7 +4,7 @@ import { Redirect, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
-type RouteGroup = '(auth)' | '(app)' | '(tabs)' | string;
+type RouteGroup = '(auth)' | '(app)' | '(tabs)' | '(settings)' | string;
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { session, isLoading, hasCompletedPaywall } = useAuth();
@@ -45,10 +45,11 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     }
 
     // 3. If user is logged in and has completed paywall
-    if (session && hasCompletedPaywall) {
-        if (currentRouteGroup !== '(tabs)') {
-            return <Redirect href="/(tabs)" />;
-        }
+    // Allow access to both (tabs) and (settings) routes
+    const allowedGroups = ['(tabs)', '(settings)'];
+    if (!allowedGroups.includes(currentRouteGroup)) {
+        // Default to (tabs) if trying to access other routes
+        return <Redirect href="/(tabs)" />;
     }
 
     return <>{children}</>;

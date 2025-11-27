@@ -1,221 +1,302 @@
-// components/plaid/BankAccountsList.tsx  ← EI FILE TA PURA REPLACE KOR
-import { formatCurrency } from '@/utils/format';
+// components/plaid/BankAccountsList.tsx
 import { MaterialIcons } from '@expo/vector-icons';
-import React from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { usePlaid } from '../../context/PlaidContext';
+import React, { useRef } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-export const BankAccountsList = () => {
-  const { accounts, isLoading, error, fetchAccounts, connectBank, reconnectBank, removeBank } = usePlaid();
+interface Account {
+  id: string;
+  name: string;
+  mask?: string;
+  type?: string;
+  subtype?: string;
+  current_balance?: number;
+  currency_code?: string;
+  institution_name?: string;
+  official_name?: string;
+}
 
-  const onRefresh = () => fetchAccounts();
+interface BankAccountsListProps {
+  accounts: Account[];
+  onRefresh?: () => Promise<void>;
+  refreshing?: boolean;
+  onAccountPress?: (account: Account) => void;
+  onConnectPress: () => void;
+  isLoading?: boolean;
+  error?: string | null;
+}
 
-  const renderItem = ({ item }: any) => (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <View style={styles.icon}>
-          <MaterialIcons name="account-balance" size={28} color="#4A90E2" />
+const BankAccountsList: React.FC<BankAccountsListProps> = ({
+  accounts = [],
+  onRefresh,
+  refreshing = false,
+  onAccountPress,
+  onConnectPress,
+  isLoading = false,
+  error = null,
+}) => {
+  const flatListRef = useRef<FlatList>(null);
+
+  const formatCurrency = (amount?: number, currency: string = 'USD') => {
+    if (amount === undefined || amount === null) return 'N/A';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  const renderAccountItem = ({ item }: { item: Account }) => (
+    <TouchableOpacity
+      style={styles.accountItem}
+      onPress={() => onAccountPress?.(item)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.accountHeader}>
+        <View style={styles.accountIcon}>
+          <MaterialIcons name="account-balance" size={24} color="#4A6FA5" />
         </View>
-        <View style={styles.info}>
-          <Text style={styles.name}>{item.institution_name}</Text>
-          <Text style={styles.type}>{item.name} ••••{item.mask}</Text>
-          <Text style={styles.balance}>{formatCurrency(item.balances.current || 0)}</Text>
+        <View style={styles.accountInfo}>
+          <Text style={styles.accountName} numberOfLines={1}>
+            {item.name || item.official_name || 'Unnamed Account'}
+          </Text>
+          <Text style={styles.accountType} numberOfLines={1}>
+            {item.institution_name ? `${item.institution_name} • ` : ''}
+            {item.type ? `${item.type} • ` : ''}
+            {item.mask ? `••••${item.mask}` : ''}
+          </Text>
         </View>
       </View>
-      <View style={styles.actions}>
-        <TouchableOpacity onPress={() => reconnectBank(item.item_id)} disabled={isLoading}>
-          <MaterialIcons name="sync" size={22} color="#4A90E2" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => removeBank(item.item_id)} disabled={isLoading}>
-          <MaterialIcons name="delete" size={22} color="#ef4444" />
-        </TouchableOpacity>
+      <View style={styles.balanceContainer}>
+        <Text style={styles.balanceText}>
+          {formatCurrency(item.current_balance, item.currency_code)}
+        </Text>
       </View>
+    </TouchableOpacity>
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      {isLoading ? (
+        <ActivityIndicator size="large" color="#4A6FA5" />
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error-outline" size={48} color="#EF4444" />
+          <Text style={styles.errorText}>{error}</Text>
+          {onRefresh && (
+            <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <View style={styles.emptyContent}>
+          <MaterialIcons name="account-balance-wallet" size={48} color="#CCCCCC" />
+          <Text style={styles.emptyText}>No bank accounts found</Text>
+          <Text style={styles.emptySubtext}>
+            Connect your bank to get started
+          </Text>
+          <TouchableOpacity
+            style={styles.connectButton}
+            onPress={onConnectPress}
+            disabled={!onConnectPress}
+          >
+            <MaterialIcons name="add" size={20} color="#FFFFFF" />
+            <Text style={styles.connectButtonText}>Connect Bank Account</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 
-  if (error) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.error}>{error}</Text>
-        <TouchableOpacity onPress={fetchAccounts} style={styles.btn}>
-          <Text style={styles.btnText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
-    <FlatList
-      data={accounts || []}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.id}
-      refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
-      ListEmptyComponent={
-        <View style={styles.center}>
-          <Text style={styles.empty}>No bank accounts connected</Text>
-          <TouchableOpacity onPress={connectBank} style={styles.addBtn}>
-            <Text style={styles.addBtnText}>+ Connect Bank Account</Text>
-          </TouchableOpacity>
-        </View>
-      }
-      ListFooterComponent={
-        accounts?.length > 0 ? (
-          <TouchableOpacity onPress={connectBank} style={styles.footerBtn}>
-            <MaterialIcons name="add" size={20} color="#10b981" />
-            <Text style={styles.footerText}>Add Another Account</Text>
-          </TouchableOpacity>
-        ) : null   // ← null diye dibi, false na!
-      }
-    />
+    <View style={styles.container}>
+      <FlatList
+        ref={flatListRef}
+        data={accounts}
+        renderItem={renderAccountItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={[
+          styles.listContainer,
+          (accounts.length === 0 || isLoading) && { flexGrow: 1 },
+        ]}
+        ListEmptyComponent={!isLoading ? renderEmptyState : null}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={!!refreshing}
+              onRefresh={onRefresh}
+              tintColor="#4A6FA5"
+              colors={['#4A6FA5']}
+            />
+          ) : undefined
+        }
+        showsVerticalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListFooterComponent={
+          accounts.length > 0 ? (
+            <TouchableOpacity
+              style={styles.addAccountButton}
+              onPress={onConnectPress}
+              disabled={!onConnectPress}
+            >
+              <MaterialIcons name="add" size={20} color="#4A6FA5" />
+              <Text style={styles.addAccountButtonText}>Add Another Account</Text>
+            </TouchableOpacity>
+          ) : null
+        }
+      />
+    </View>
   );
 };
 
-// components/plaid/BankAccountsList.tsx → styles (full copy-paste kor)
-
 const styles = StyleSheet.create({
-  // Main card
-  card: {
+  container: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+  },
+  listContainer: {
+    padding: 16,
+  },
+  accountItem: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 18,
-    marginHorizontal: 16,
-    marginVertical: 8,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    marginBottom: 12,
   },
-
-  // Header (icon + info)
-  header: {
+  accountHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
   },
-
-  icon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#EBF5FF',
+  accountIcon: {
+    backgroundColor: '#E8EFF9',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
-
-  info: {
+  accountInfo: {
     flex: 1,
   },
-
-  name: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 4,
+  accountName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A2B4D',
+    marginBottom: 2,
   },
-
-  type: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 6,
-    fontWeight: '500',
+  accountType: {
+    fontSize: 12,
+    color: '#6B7280',
   },
-
-  balance: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#10b981', // emerald-500
+  balanceContainer: {
+    alignItems: 'flex-end',
   },
-
-  // Action buttons (Reconnect + Delete)
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    gap: 20,
+  balanceText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A2B4D',
   },
-
-  // Empty state
-  center: {
+  emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    padding: 40,
   },
-
-  empty: {
+  emptyContent: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  emptyText: {
     fontSize: 18,
-    color: '#6b7280',
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 16,
+    marginBottom: 8,
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 26,
   },
-
-  error: {
+  emptySubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  errorText: {
+    color: '#EF4444',
+    textAlign: 'center',
     fontSize: 16,
-    color: '#ef4444',
-    textAlign: 'center',
-    marginBottom: 20,
+    marginTop: 12,
+    marginBottom: 16,
   },
-
-  // Connect Bank Button (Empty State)
-  addBtn: {
-    backgroundColor: '#10b981',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 14,
+  separator: {
+    height: 12,
+  },
+  connectButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 10,
+    backgroundColor: '#4A6FA5',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    opacity: 1,
   },
-
-  addBtnText: {
+  connectButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-
-  // Add Another Account (Footer)
-  footerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    marginHorizontal: 16,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#10b981',
-    borderRadius: 14,
-    backgroundColor: '#f0fdf4',
-  },
-
-  footerText: {
-    color: '#10b981',
-    fontWeight: '700',
-    fontSize: 16,
+    fontWeight: '600',
     marginLeft: 8,
   },
-
-  // Retry button (error state)
-  btn: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 12,
+  retryButton: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-
-  btnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
+  retryButtonText: {
+    color: '#4A6FA5',
+    fontWeight: '600',
+  },
+  addAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    marginTop: 8,
+  },
+  addAccountButtonText: {
+    color: '#4A6FA5',
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
+
+export default BankAccountsList;

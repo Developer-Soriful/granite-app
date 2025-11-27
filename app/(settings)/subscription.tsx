@@ -100,7 +100,7 @@ export default function SubscriptionScreen() {
 
     if (state.loading) {
         return (
-            <View style={styles.container}>
+            <View style={styles.loading}>
                 <ActivityIndicator size="large" color="#006C76" />
                 <Text style={styles.loadingText}>Loading subscription data...</Text>
             </View>
@@ -109,7 +109,7 @@ export default function SubscriptionScreen() {
 
     if (state.error) {
         return (
-            <View style={styles.container}>
+            <View style={styles.loading}>
                 <Text style={styles.errorText}>Error fetching data: {state.error}</Text>
                 <Text style={styles.errorText}>Please check your network setup.</Text>
             </View>
@@ -134,6 +134,13 @@ export default function SubscriptionScreen() {
 
 
 const styles = StyleSheet.create({
+    loading: {
+        display: "flex",
+        justifyContent: 'center',
+        alignItems: "center",
+        flex: 1,
+        backgroundColor: '#e6f5ee',
+    },
     container: {
         flex: 1,
         backgroundColor: '#e6f5ee',

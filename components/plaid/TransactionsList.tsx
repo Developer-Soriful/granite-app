@@ -1,10 +1,9 @@
 // components/plaid/TransactionsList.tsx
-import { MaterialIcons } from '@expo/vector-icons';
-import { format } from 'date-fns';
 import React from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { usePlaidTransactions } from '../../hooks/usePlaidTransactions';
 
-interface Transaction {
+export interface Transaction {
     id: string;
     name: string;
     amount: number;
@@ -15,71 +14,92 @@ interface Transaction {
 }
 
 interface TransactionsListProps {
-    transactions: Transaction[];
     onTransactionPress?: (transactionId: string) => void;
-    onRefresh?: () => void;
-    refreshing?: boolean;
+    itemCount?: number; // Optional limit on number of transactions to show
 }
 
 export const TransactionsList: React.FC<TransactionsListProps> = ({
-    transactions,
     onTransactionPress,
-    onRefresh,
-    refreshing = false,
+    itemCount,
 }) => {
+    const { transactions, isLoading, error, refetch } = usePlaidTransactions();
+
     const renderTransaction = ({ item }: { item: Transaction }) => {
         const isNegative = item.amount < 0;
         const amountColor = isNegative ? '#E74C3C' : '#2ECC71';
         const amountSign = isNegative ? '-' : '+';
         const displayName = item.merchant_name || item.name;
+        const formattedDate = new Date(item.date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+        });
 
         return (
             <View style={styles.transactionItem}>
                 <View style={styles.transactionIcon}>
-                    <MaterialIcons
-                        name={isNegative ? "arrow-upward" : "arrow-downward"}
-                        size={20}
-                        color="#4A90E2"
-                    />
+                    <Text style={styles.transactionIconText}>
+                        {displayName.charAt(0).toUpperCase()}
+                    </Text>
                 </View>
                 <View style={styles.transactionDetails}>
                     <Text style={styles.transactionName} numberOfLines={1}>
                         {displayName}
                     </Text>
-                    <Text style={styles.transactionCategory} numberOfLines={1}>
+                    <Text style={styles.transactionCategory}>
                         {item.category?.[0] || 'Uncategorized'}
                     </Text>
-                    <Text style={styles.transactionDate}>
-                        {format(new Date(item.date), 'MMM d, yyyy')}
-                        {item.pending && ' • Pending'}
-                    </Text>
                 </View>
-                <Text style={[styles.transactionAmount, { color: amountColor }]}>
-                    {amountSign}${Math.abs(item.amount).toFixed(2)}
-                </Text>
+                <View style={styles.transactionAmountContainer}>
+                    <Text style={[styles.transactionAmount, { color: amountColor }]}>
+                        {amountSign}${Math.abs(item.amount).toFixed(2)}
+                    </Text>
+                    <Text style={styles.transactionDate}>{formattedDate}</Text>
+                </View>
             </View>
         );
     };
 
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#0000ff" />
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>
+                    Failed to load transactions. Please try again.
+                </Text>
+                <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
+                    <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    const displayedTransactions = itemCount
+        ? transactions.slice(0, itemCount)
+        : transactions;
+
     return (
         <FlatList
-            data={transactions}
+            data={displayedTransactions}
             renderItem={renderTransaction}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             refreshControl={
-                onRefresh ? (
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        colors={['#4A90E2']}
-                        tintColor="#4A90E2"
-                    />
-                ) : undefined
+                <RefreshControl
+                    refreshing={isLoading}
+                    onRefresh={refetch}
+                    colors={['#0000ff']}
+                    tintColor="#0000ff"
+                />
             }
             ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                    <MaterialIcons name="receipt" size={48} color="#ccc" />
                     <Text style={styles.emptyText}>No transactions found</Text>
                 </View>
             }
@@ -96,49 +116,80 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
+        borderBottomColor: '#f0f0f0',
     },
     transactionIcon: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#EFF4FF',
+        backgroundColor: '#e0e0e0',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
     },
+    transactionIconText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+    },
     transactionDetails: {
         flex: 1,
-        marginRight: 8,
+        marginRight: 12,
     },
     transactionName: {
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: '500',
-        color: '#1A1A1A',
+        color: '#333',
         marginBottom: 2,
     },
     transactionCategory: {
-        fontSize: 13,
+        fontSize: 12,
         color: '#666',
+    },
+    transactionAmountContainer: {
+        alignItems: 'flex-end',
+    },
+    transactionAmount: {
+        fontSize: 16,
+        fontWeight: '600',
         marginBottom: 2,
     },
     transactionDate: {
         fontSize: 12,
         color: '#999',
     },
-    transactionAmount: {
-        fontSize: 16,
-        fontWeight: '600',
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    errorText: {
+        color: '#E74C3C',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    retryButton: {
+        padding: 10,
+        backgroundColor: '#f0f0f0',
+        borderRadius: 5,
+    },
+    retryButtonText: {
+        color: '#333',
+        fontWeight: '500',
     },
     emptyContainer: {
-        padding: 32,
+        padding: 20,
         alignItems: 'center',
-        justifyContent: 'center'
     },
     emptyText: {
-        marginTop: 16,
-        fontSize: 16,
         color: '#666',
-        textAlign: 'center',
+        fontSize: 16,
     },
 });

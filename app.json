@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "bundleIdentifier": "com.granitefinance.app", // ← CHANGE THIS
+      "bundleIdentifier": "com.granitefinance.app",
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
           "plaid"
@@ -17,12 +17,12 @@
       },
       "supportsTablet": true,
       "associatedDomains": [
-        "applinks:www.granitefinance.io", // ← ADD THIS
+        "applinks:www.granitefinance.io",
         "applinks:granitefinance.io"
       ]
     },
     "android": {
-      "package": "com.granitefinance.app", // ← ADD THIS (same as iOS)
+      "package": "com.granitefinance.app",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -62,6 +62,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "react-native-plaid-link-sdk",
       "expo-router",
       [
         "expo-splash-screen",
@@ -79,6 +80,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "532e1ae4-1de9-4a30-b31f-87deaaadfee8"
+      }
     }
   }
 }
