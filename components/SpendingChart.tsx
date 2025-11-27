@@ -2,7 +2,6 @@ import { Images } from "@/assets";
 import React, { useMemo, useState } from "react";
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { G, Rect, Text as SvgText } from "react-native-svg";
-import { BarChart, Grid, PieChart, YAxis } from "react-native-svg-charts";
 
 const { width } = Dimensions.get("window");
 const CHART_SIZE = width * 0.7;
@@ -147,7 +146,7 @@ const SpendingChart: React.FC<SpendingChartProps> = ({ data }) => {
 
 
             {/* Chart Area */}
-            <View className="mb-8" style={{ height: CHART_SIZE, width: CHART_SIZE }}>
+            {/* <View className="mb-8" style={{ height: CHART_SIZE, width: CHART_SIZE }}>
                 {activeChart === 'pie' ? (
                     <PieChart
                         style={{ height: CHART_SIZE, width: CHART_SIZE }}
@@ -189,7 +188,7 @@ const SpendingChart: React.FC<SpendingChartProps> = ({ data }) => {
                             </BarChart>
                         </View>
 
-                        {/* Tooltip */}
+                
                         {tooltipData && (
                             <View
                                 style={[
@@ -211,7 +210,7 @@ const SpendingChart: React.FC<SpendingChartProps> = ({ data }) => {
                         )}
                     </View>
                 )}
-            </View>
+            </View> */}
 
             {/* Legend */}
             <View className="w-full mt-2">
