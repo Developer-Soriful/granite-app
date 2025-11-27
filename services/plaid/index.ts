@@ -1,8 +1,71 @@
 // services/plaid/index.ts
 
-import { supabase } from '@/config/supabase.config';
+import { supabase, SUPABASE_URL } from '@/config/supabase.config';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+
+// Build Supabase auth cookies to satisfy backend expecting cookies (SSR helpers)
+function getSupabaseProjectRef(url: string | undefined): string | null {
+  try {
+    if (!url) return null;
+    const { hostname } = new URL(url);
+    // e.g., qzbkohynvszmnmybnhiw.supabase.co -> qzbkohynvszmnmybnhiw
+    const parts = hostname.split('.');
+    return parts.length ? parts[0] : null;
+  } catch {
+    return null;
+  }
+}
+
+function base64Encode(str: string): string {
+  try {
+    // btoa may not exist in RN; use polyfill behavior
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    let output = '';
+    let i = 0;
+    while (i < str.length) {
+      const c1 = str.charCodeAt(i++);
+      const c2 = str.charCodeAt(i++);
+      const c3 = str.charCodeAt(i++);
+      const e1 = c1 >> 2;
+      const e2 = ((c1 & 3) << 4) | (c2 >> 4);
+      const e3 = isNaN(c2) ? 64 : (((c2 & 15) << 2) | (c3 >> 6));
+      const e4 = isNaN(c2) || isNaN(c3) ? 64 : (c3 & 63);
+      output += chars.charAt(e1) + chars.charAt(e2) + chars.charAt(e3) + chars.charAt(e4);
+    }
+    return output;
+  } catch {
+    return '';
+  }
+}
+
+function buildSupabaseAuthCookie(session: any): string | null {
+  try {
+    if (!session) return null;
+    const projectRef = getSupabaseProjectRef(SUPABASE_URL);
+    if (!projectRef) return null;
+
+    // The cookie value is base64 of the full session JSON, chunked
+    const sessionStr = JSON.stringify(session);
+    const base64Session = base64Encode(sessionStr);
+    const CHUNK_SIZE = 4000;
+    const chunks: string[] = [];
+    for (let i = 0; i < base64Session.length; i += CHUNK_SIZE) {
+      chunks.push(base64Session.substring(i, i + CHUNK_SIZE));
+    }
+
+    const cookieParts: string[] = [];
+    for (let j = 0; j < chunks.length; j++) {
+      const cookieName = `sb-${projectRef}-auth-token.${j}`;
+      cookieParts.push(`${cookieName}=base64-${chunks[j]}`);
+    }
+
+    // Join into a Cookie header value
+    return cookieParts.join('; ');
+  } catch {
+    return null;
+  }
+}
 
 // Helper function for API calls
 async function apiCall(endpoint: string, options: RequestInit = {}) {
@@ -13,12 +76,16 @@ async function apiCall(endpoint: string, options: RequestInit = {}) {
 
   console.log(`Making API call to: ${url}`);
 
+  const cookieHeader = buildSupabaseAuthCookie(session);
+
   try {
     const response = await fetch(url, {
       credentials: 'omit',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
         ...(options.headers || {}),
       },
       ...options,

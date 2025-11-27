@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   connectButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4A6FA5',
+    backgroundColor: '#4c8167',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
