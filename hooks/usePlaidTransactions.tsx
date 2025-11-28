@@ -1,6 +1,5 @@
 // hooks/usePlaidTransactions.tsx
 import { supabase } from '@/config/supabase.config';
-import { PlaidService } from '@/services/plaid';
 import { useQuery } from '@tanstack/react-query';
 import { usePlaidItems } from './usePlaidItems';
 
@@ -12,9 +11,9 @@ interface Transaction {
     category: string[];
     pending: boolean;
     merchant_name: string | null;
-    plaid_item_id?: string;
 }
 
+// hooks/usePlaidTransactions.tsx
 export const usePlaidTransactions = () => {
     const { data: plaidItems = [], isLoading: isLoadingItems } = usePlaidItems();
 
@@ -26,42 +25,41 @@ export const usePlaidTransactions = () => {
     } = useQuery<Transaction[]>({
         queryKey: ['plaid', 'transactions'],
         queryFn: async () => {
-            if (plaidItems.length === 0) return [];
-
-            // 1) Sync each item server-side
-            for (const item of plaidItems) {
-                try {
-                    await PlaidService.syncItem(item.id);
-                } catch (e) {
-                    console.error(`Error syncing transactions for item ${item.id}:`, e);
-                }
-            }
-
-            // 2) Fetch from Supabase per item and aggregate
-            const aggregated: Transaction[] = [];
-            for (const item of plaidItems) {
-                const { data: itemTransactions, error: txError } = await supabase
+            try {
+                // 1) Fetch transactions directly without syncing first
+                // The sync should be handled by the backend when the item is linked
+                const { data: allTransactions, error: txError } = await supabase
                     .from('transactions')
                     .select('*')
-                    .eq('plaid_item_id', item.id)
-                    .order('date', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .limit(100);
 
                 if (txError) {
-                    console.error(`Error fetching transactions for item ${item.id}:`, txError);
-                    continue;
+                    console.error('Error fetching transactions:', txError);
+                    return [];
                 }
-                if (itemTransactions) {
-                    aggregated.push(...(itemTransactions as Transaction[]));
-                }
-            }
 
-            // 3) Sort newest first
-            aggregated.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            return aggregated;
+                // 2) Transform the data to match the expected format
+                return (allTransactions || []).map(tx => ({
+                    id: tx.id,
+                    name: tx.name || tx.description || 'Unknown Transaction',
+                    amount: parseFloat(tx.amount) || 0,
+                    date: tx.date || tx.created_at,
+                    category: Array.isArray(tx.category)
+                        ? tx.category
+                        : [tx.category || 'Uncategorized'],
+                    pending: Boolean(tx.pending),
+                    merchant_name: tx.merchant_name || null
+                }));
+
+            } catch (error) {
+                console.error('Error in usePlaidTransactions:', error);
+                return []; // Return empty array on error to prevent UI breakage
+            }
         },
-        enabled: plaidItems.length > 0,
+        enabled: true, // Always enable to fetch transactions if user is authenticated
         refetchOnWindowFocus: false,
-        staleTime: 5 * 60 * 1000,
+        staleTime: 5 * 60 * 1000, // 5 minutes
     });
 
     return {
