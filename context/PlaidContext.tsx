@@ -118,43 +118,6 @@ export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
                 .select('*')
                 .eq('user_id', session.user.id);
 
-            if (itemsError) throw itemsError;
-            if (!plaidItems || plaidItems.length === 0) {
-                setTransactions([]);
-                return;
-            }
-
-            // OPTIONAL: If you want fresh data before fetching, you can sync each item here.
-            for (const item of plaidItems) {
-                try {
-                    await PlaidService.syncItemTransactions(item.id);
-                } catch (e) {
-                    console.error(`Sync failed for item ${item.id}`, e);
-                }
-            }
-
-            // 3) Query transactions per item from Supabase and merge results
-            const allTransactions: any[] = [];
-            for (const item of plaidItems) {
-                const { data: itemTransactions, error: txError } = await supabase
-                    .from('transactions')
-                    .select('*')
-                    .eq('plaid_item_id', item.id)
-                    .gte('date', start)
-                    .lte('date', end)
-                    .order('date', { ascending: false });
-
-                if (txError) {
-                    console.error(`Error fetching transactions for item ${item.id}:`, txError);
-                    continue;
-                }
-                if (itemTransactions) allTransactions.push(...itemTransactions);
-            }
-
-            setTransactions(allTransactions);
-        } catch (err: any) {
-            console.error("Error fetching transactions:", err);
-            setError(err.message || 'Failed to load transactions');
         } finally {
             setIsLoading(false);
         }
@@ -203,7 +166,7 @@ export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
 
                     try {
                         console.log("Exchanging public token...");
-                        await PlaidService.exchangeToken(success.publicToken);
+                        await PlaidService.exchangePublicToken(success.publicToken);
                         console.log("Token exchanged successfully");
 
                         await fetchAccounts();
@@ -300,7 +263,7 @@ export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
                 style: "destructive",
                 onPress: async () => {
                     try {
-                        await PlaidService.removeItem(itemId);
+                        await PlaidService.removePlaidItem(itemId);
                         await fetchAccounts();
                         Alert.alert("Removed", "Bank account removed successfully");
                     } catch (err: any) {

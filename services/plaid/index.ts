@@ -29,8 +29,8 @@ function base64Encode(str: string): string {
       const c3 = str.charCodeAt(i++);
       const e1 = c1 >> 2;
       const e2 = ((c1 & 3) << 4) | (c2 >> 4);
-      const e3 = isNaN(c2) ? 64 : (((c2 & 15) << 2) | (c3 >> 6));
-      const e4 = isNaN(c2) || isNaN(c3) ? 64 : (c3 & 63);
+      const e3 = isNaN(c2) ? 64 : ((c2 & 15) << 2) | (c3 >> 6);
+      const e4 = isNaN(c3) ? 64 : (c3 & 63);
       output += chars.charAt(e1) + chars.charAt(e2) + chars.charAt(e3) + chars.charAt(e4);
     }
     return output;
@@ -68,7 +68,7 @@ function buildSupabaseAuthCookie(session: any): string | null {
 }
 
 // Helper function for API calls
-async function apiCall(endpoint: string, options: RequestInit = {}) {
+async function apiCall(endpoint: string, options: RequestInit = {}): Promise<any> {
   const url = API_URL ? `${API_URL.replace(/\/$/, '')}${endpoint}` : endpoint;
 
   // Attach Supabase access token via Bearer header (RN does not reliably handle cookies)
@@ -92,22 +92,12 @@ async function apiCall(endpoint: string, options: RequestInit = {}) {
     });
 
     const contentType = response.headers.get('content-type');
-
     if (contentType && contentType.includes('application/json')) {
       const data = await response.json();
-
       if (!response.ok) {
-        console.error(`API Error ${response.status}:`, {
-          url,
-          status: response.status,
-          statusText: response.statusText,
-          data,
-        });
-        throw new Error(
-          data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`
-        );
+        console.error(`API Error ${response.status}:`, { url, status: response.status, statusText: response.statusText, data });
+        throw new Error(data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`);
       }
-
       return data;
     } else {
       const text = await response.text();
@@ -115,10 +105,7 @@ async function apiCall(endpoint: string, options: RequestInit = {}) {
       throw new Error(`Expected JSON response, got ${contentType}`);
     }
   } catch (error) {
-    console.error('API call failed:', {
-      url,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    console.error('API call failed:', { url, error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }
@@ -128,70 +115,61 @@ export const PlaidService = {
   getLinkToken: async (): Promise<string> => {
     console.log('Getting Plaid link token...');
     try {
-      const data = await apiCall('/api/plaid/link-token', {
-        method: 'GET',
-      });
-
+      const data = await apiCall('/api/plaid/link-token', { method: 'GET' });
       if (!data || !data.link_token) {
         throw new Error('No link_token in response');
       }
-
       console.log('Successfully received Plaid link token');
       return data.link_token;
     } catch (error) {
       console.error('Failed to get Plaid link token:', error);
-      throw new Error(
-        error instanceof Error
-          ? `Failed to get Plaid link: ${error.message}`
-          : 'Failed to get Plaid link token'
-      );
+      throw new Error(error instanceof Error ? `Failed to get Plaid link: ${error.message}` : 'Failed to get Plaid link token');
     }
   },
 
   // 2. Exchange Public Token
-  exchangeToken: async (publicToken: string) => {
+  exchangePublicToken: async (publicToken: string): Promise<void> => {
+    console.log('Exchanging Plaid public token...');
     try {
-      return await apiCall('/api/plaid/sync', {
+      // Reverted to original endpoint /api/plaid/sync
+      await apiCall('/api/plaid/sync', {
         method: 'POST',
         body: JSON.stringify({ public_token: publicToken }),
       });
+      console.log('Successfully exchanged Plaid public token');
     } catch (error) {
-      console.error('Error exchanging token:', error);
-      throw error;
+      console.error('Failed to exchange Plaid public token:', error);
+      throw new Error(error instanceof Error ? `Failed to exchange public token: ${error.message}` : 'Failed to exchange Plaid public token');
     }
   },
 
-  // 3. Sync Item Transactions (existing item)
-  syncItemTransactions: async (itemId: string) => {
+  // 3. Sync Item (Trigger backend sync)
+  syncItem: async (itemId: string): Promise<any> => {
+    console.log(`Syncing Plaid item: ${itemId}`);
     try {
+      // Reverted to original endpoint /api/plaid/sync
       const result = await apiCall('/api/plaid/sync', {
         method: 'POST',
         body: JSON.stringify({ item_id: itemId }),
       });
-
-      console.log('Sync completed:', {
-        added: result.added,
-        modified: result.modified,
-        removed: result.removed,
-        total: result.total,
-      });
-
+      console.log('Sync completed:', result);
       return result;
     } catch (error) {
-      console.error('Error syncing item:', error);
-      throw error;
+      console.error('Failed to sync Plaid item:', error);
+      throw new Error(error instanceof Error ? `Failed to sync Plaid item: ${error.message}` : 'Failed to sync Plaid item');
     }
   },
 
-  // 4. Remove Item
-  removeItem: async (itemId: string) => {
+  // 4. Remove Plaid Item
+  removePlaidItem: async (itemId: string) => {
+    console.log(`Removing Plaid item: ${itemId}`);
     try {
-      return await apiCall('/api/plaid/remove-item', {
+      await apiCall('/api/plaid/remove-item', {
         method: 'POST',
         body: JSON.stringify({ item_id: itemId }),
       });
     } catch (error) {
-      console.error('Error removing item:', error);
+      console.error('Error removing Plaid item:', error);
       throw error;
     }
   },

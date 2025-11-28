@@ -31,7 +31,7 @@ export const usePlaidTransactions = () => {
             // 1) Sync each item server-side
             for (const item of plaidItems) {
                 try {
-                    await PlaidService.syncItemTransactions(item.id);
+                    await PlaidService.syncItem(item.id);
                 } catch (e) {
                     console.error(`Error syncing transactions for item ${item.id}:`, e);
                 }
