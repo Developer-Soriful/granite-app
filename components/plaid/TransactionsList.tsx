@@ -1,7 +1,8 @@
 // components/plaid/TransactionsList.tsx
+import { usePlaid } from '@/context/PlaidContext';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { usePlaidTransactions } from '../../hooks/usePlaidTransactions';
 
 export interface Transaction {
     id: string;
@@ -22,14 +23,20 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
     onTransactionPress,
     itemCount,
 }) => {
-    const { transactions, isLoading, error, refetch } = usePlaidTransactions();
+    // const { transactions, isLoading, error, refetch } = usePlaidTransactions();
+    const { transactions, isLoading, error, fetchTransactions } = usePlaid();
+
 
     const renderTransaction = ({ item }: { item: Transaction }) => {
-        const isNegative = item.amount < 0;
+
+
+        const accounts = item.accounts.map((data: any) => data)
+        const isNegative = item.accounts[0].balances.current < 0;
         const amountColor = isNegative ? '#E74C3C' : '#2ECC71';
         const amountSign = isNegative ? '-' : '+';
-        const displayName = item.merchant_name || item.name;
-        const formattedDate = new Date(item.date).toLocaleDateString('en-US', {
+        const displayName = item.accounts[0].name || item.accounts[0].official_name;
+                const balance = item.accounts[0].balances.current 
+        const formattedDate = new Date(item.created_at).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
         });
@@ -37,21 +44,19 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
         return (
             <View style={styles.transactionItem}>
                 <View style={styles.transactionIcon}>
-                    <Text style={styles.transactionIconText}>
-                        {displayName.charAt(0).toUpperCase()}
-                    </Text>
+                 <MaterialCommunityIcons name="bank-outline" size={24} color={amountColor}  />
                 </View>
                 <View style={styles.transactionDetails}>
                     <Text style={styles.transactionName} numberOfLines={1}>
                         {displayName}
                     </Text>
                     <Text style={styles.transactionCategory}>
-                        {item.category?.[0] || 'Uncategorized'}
+                        {item.status || 'Uncategorized'}
                     </Text>
                 </View>
                 <View style={styles.transactionAmountContainer}>
                     <Text style={[styles.transactionAmount, { color: amountColor }]}>
-                        {amountSign}${Math.abs(item.amount).toFixed(2)}
+                       {balance < 0? `-` : `+`} ${balance}
                     </Text>
                     <Text style={styles.transactionDate}>{formattedDate}</Text>
                 </View>
@@ -73,7 +78,17 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                 <Text style={styles.errorText}>
                     Failed to load transactions. Please try again.
                 </Text>
-                <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
+                <TouchableOpacity
+                    onPress={() => {
+                        // Get date range for last 30 days
+                        const endDate = new Date().toISOString().split('T')[0];
+                        const startDate = new Date();
+                        startDate.setDate(startDate.getDate() - 30);
+                        const startDateStr = startDate.toISOString().split('T')[0];
+
+                        fetchTransactions(startDateStr, endDate);
+                    }}
+                    style={styles.retryButton}>
                     <Text style={styles.retryButtonText}>Retry</Text>
                 </TouchableOpacity>
             </View>
@@ -83,6 +98,16 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
     const displayedTransactions = itemCount
         ? transactions.slice(0, itemCount)
         : transactions;
+    const handleRefresh = () => {
+        const today = new Date().toISOString().split('T')[0];
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+
+        return fetchTransactions(startDate, today);
+    };
+
+
 
     return (
         <FlatList
@@ -93,7 +118,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             refreshControl={
                 <RefreshControl
                     refreshing={isLoading}
-                    onRefresh={refetch}
+                    onRefresh={handleRefresh}
                     colors={['#0000ff']}
                     tintColor="#0000ff"
                 />

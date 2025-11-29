@@ -115,12 +115,27 @@ export const PlaidProvider = ({ children }: { children: React.ReactNode }) => {
             // 2) Get user items
             const { data: plaidItems, error: itemsError } = await supabase
                 .from('user_plaid_items')
-                .select('*')
+                .select('access_token')
                 .eq('user_id', session.user.id);
 
+            if (itemsError) throw itemsError;
+
+            // 3) Get transactions for each item
+            const transactionsPromises = plaidItems.map(async (item) => {
+                const { data: transactions, error: transactionsError } = await supabase.from('user_plaid_items').select('*').eq('access_token', item.access_token);
+                if (transactionsError) throw transactionsError;
+                return transactions;
+            });
+
+            const transactionsData = await Promise.all(transactionsPromises);
+            setTransactions(transactionsData.flat());
         } finally {
             setIsLoading(false);
         }
+
+        // console.log("ACCOUNTS:", JSON.stringify(transactions, null, 2));
+
+
     };
 
     const connectBank = async () => {

@@ -1,6 +1,6 @@
 // components/plaid/BankAccountsList.tsx
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -23,8 +23,16 @@ interface Account {
   official_name?: string;
 }
 
-interface BankAccountsListProps {
+interface PlaidItem {
+  id: string;
+  item_id: string;
+  access_token: string;
   accounts: Account[];
+  institution_name?: string;
+}
+
+interface BankAccountsListProps {
+  accounts: Account[] | PlaidItem[]; // Support both formats
   onRefresh?: () => Promise<void>;
   refreshing?: boolean;
   onAccountPress?: (account: Account) => void;
@@ -43,6 +51,27 @@ const BankAccountsList: React.FC<BankAccountsListProps> = ({
   error = null,
 }) => {
   const flatListRef = useRef<FlatList>(null);
+
+  // Flatten accounts if they're nested in Plaid items
+  const flattenedAccounts = useMemo(() => {
+    if (accounts.length === 0) return [];
+    
+    // Check if first item has nested accounts (PlaidItem format)
+    const firstItem = accounts[0] as any;
+    if (firstItem.accounts && Array.isArray(firstItem.accounts)) {
+      // Flatten nested accounts
+      return (accounts as PlaidItem[]).flatMap(item => 
+        item.accounts.map(account => ({
+          ...account,
+          institution_name: account.institution_name || item.institution_name,
+          item_id: item.item_id,
+        }))
+      );
+    }
+    
+    // Already flat array
+    return accounts as Account[];
+  }, [accounts]);
 
   const formatCurrency = (amount?: number, currency: string = 'USD') => {
     if (amount === undefined || amount === null) return 'N/A';
@@ -75,9 +104,10 @@ const BankAccountsList: React.FC<BankAccountsListProps> = ({
           </Text>
         </View>
       </View>
-      <View style={styles.balanceContainer}>
+
+            <View style={styles.balanceContainer}>
         <Text style={styles.balanceText}>
-          {formatCurrency(item.current_balance, item.currency_code)}
+          {formatCurrency(item.balances.current, item.balances.iso_currency_code)}
         </Text>
       </View>
     </TouchableOpacity>
@@ -121,12 +151,12 @@ const BankAccountsList: React.FC<BankAccountsListProps> = ({
     <View style={styles.container}>
       <FlatList
         ref={flatListRef}
-        data={accounts}
+        data={flattenedAccounts}
         renderItem={renderAccountItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
           styles.listContainer,
-          (accounts.length === 0 || isLoading) && { flexGrow: 1 },
+          (flattenedAccounts.length === 0 || isLoading) && { flexGrow: 1 },
         ]}
         ListEmptyComponent={!isLoading ? renderEmptyState : null}
         refreshControl={
@@ -142,7 +172,7 @@ const BankAccountsList: React.FC<BankAccountsListProps> = ({
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListFooterComponent={
-          accounts.length > 0 ? (
+          flattenedAccounts.length > 0 ? (
             <TouchableOpacity
               style={styles.addAccountButton}
               onPress={onConnectPress}
